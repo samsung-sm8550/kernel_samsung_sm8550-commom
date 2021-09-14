@@ -91,8 +91,8 @@ scm_version()
 				echo "$atag" | awk -F- '{printf("-%05d", $(NF-1))}'
 			fi
 
-			# Add -g and exactly 12 hex chars.
-			printf '%s%s' -g "$(echo $head | cut -c1-12)"
+			# Add -g and exactly 8 hex chars.
+			printf '%s%s' -g "$(echo $head | cut -c1-8)"
 		elif $save_tag; then
 			printf '%s' - "$(echo $tag)"
 		fi
