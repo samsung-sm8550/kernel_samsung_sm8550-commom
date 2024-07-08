@@ -619,6 +619,8 @@ static void __init fdt_reserve_elfcorehdr(void)
 	}
 
 	memblock_reserve(elfcorehdr_addr, elfcorehdr_size);
+	memblock_memsize_record("elfcorehdr", elfcorehdr_addr, elfcorehdr_size,
+				false, false);
 
 	pr_info("Reserving %llu KiB of memory at 0x%llx for elfcorehdr\n",
 		elfcorehdr_size >> 10, elfcorehdr_addr);
@@ -639,17 +641,21 @@ void __init early_init_fdt_scan_reserved_mem(void)
 	if (!initial_boot_params)
 		return;
 
+	memblock_memsize_disable_tracking();
+
 	/* Process header /memreserve/ fields */
 	for (n = 0; ; n++) {
 		fdt_get_mem_rsv(initial_boot_params, n, &base, &size);
 		if (!size)
 			break;
 		early_init_dt_reserve_memory_arch(base, size, false);
+		memblock_memsize_record("memreserve", base, size, false, false);
 	}
 
 	of_scan_flat_dt(__fdt_scan_reserved_mem, NULL);
 	fdt_init_reserved_mem();
 	fdt_reserve_elfcorehdr();
+	memblock_memsize_enable_tracking();
 }
 
 /**
@@ -1308,11 +1314,16 @@ void __init early_init_dt_scan_nodes(void)
 	if (!rc)
 		pr_warn("No chosen node found, continuing without\n");
 
+	memblock_memsize_disable_tracking();
+
 	/* Setup memory, calling early_init_dt_add_memory_arch */
 	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
 
 	/* Handle linux,usable-memory-range property */
 	early_init_dt_check_for_usable_mem_range();
+
+	memblock_memsize_enable_tracking();
+	memblock_memsize_detect_hole();
 }
 
 bool __init early_init_dt_scan(void *params)

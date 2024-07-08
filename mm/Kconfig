@@ -96,6 +96,13 @@ config HAVE_FAST_GUP
 	depends on MMU
 	bool
 
+config MEMBLOCK_MEMSIZE
+	bool "memblock based reserved memory profiling"
+	default y
+	help
+	  This patch introduce a procfs node, memblock/memsize, to see reserved
+	  memory easily.
+
 # Don't discard allocated memory used to track "memory" and "reserved" memblocks
 # after early boot, so it can still be used to test for validity of memory.
 # Also, memblocks are updated with memory hot(un)plug.
@@ -831,6 +838,33 @@ config PERCPU_STATS
 	  information includes global and per chunk statistics, which can
 	  be used to help understand percpu memory usage.
 
+config KSWAPD_CPU
+	hex "Set kswapd cpu affinity by default"
+	default 0x7F
+	help
+	  Set kswapd cpu affinity by default. 0x3F means allowing CPU as 0 to 5.
+	  To disable this config, set this to 0.
+
+config MMAP_READAROUND_LIMIT
+	int "Limit mmap readaround upperbound"
+	default 16
+	help
+	  Inappropriate mmap readaround size can hurt device performance
+	  during the sluggish situation. Add the hard upper-limit for
+	  mmap readaround.
+
+config FAULT_AROUND_BYTES
+	int "Fault around bytes"
+	default 32768
+	range 4096 65536
+	help
+	  The number of bytes to be mapped around the fault.
+
+config DIRECT_RECLAIM_FILE_PAGES_ONLY
+	bool "Reclaim file pages only on direct reclaim path"
+	depends on SWAP
+	default y
+
 config GUP_TEST
 	bool "Enable infrastructure for get_user_pages()-related unit tests"
 	depends on DEBUG_FS
@@ -966,4 +1000,37 @@ config SPECULATIVE_PAGE_FAULT
 	  an unsupported case, the fault handler falls back to classical
 	  processing using the mmap read lock.
 
+config PAGE_BOOST
+	bool "PAGE_BOOST feature"
+	depends on MMU
+	default y
+	help
+	  Enable this for PAGE_BOOST feature
+
+config KZEROD
+	bool "Support kzerod"
+	default y
+	depends on !NEED_MULTIPLE_NODES
+	depends on TRANSPARENT_HUGEPAGE
+	help
+	  Support kzerod kernel thread which does prezeroing of free pages.
+
+config KZEROD_ENABLE
+	bool "enabling kzerod thread"
+	default n
+	depends on KZEROD
+	help
+	  Enable to create the kzerod thread.
+
+config HUGEPAGE_POOL
+	bool "hugepage pool management"
+	default y
+	depends on KZEROD && !HIGHMEM && !ZONE_DEVICE
+	depends on TRANSPARENT_HUGEPAGE
+	help
+	  Enable this to provide 2MB hugepage to THP anon, ION, and GPU memory
+	  allocation requests efficiently.
+
 endmenu
+
+source "mm/sec_mm/Kconfig"

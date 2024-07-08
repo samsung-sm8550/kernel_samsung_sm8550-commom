@@ -66,6 +66,12 @@ obj-y += init-mm.o
 obj-y += memblock.o
 obj-y += $(memory-hotplug-y)
 
+obj-y += sec_mm/
+
+ifdef CONFIG_KZEROD
+obj-y += kzerod.o
+endif
+
 ifdef CONFIG_MMU
 	obj-$(CONFIG_ADVISE_SYSCALLS)	+= madvise.o
 endif

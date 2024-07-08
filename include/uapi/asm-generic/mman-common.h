@@ -71,6 +71,13 @@
 
 #define MADV_COLD	20		/* deactivate these pages */
 #define MADV_PAGEOUT	21		/* reclaim these pages */
+#define MADV_WRITEBACK	29
+#define MADV_PREFETCH	30
+
+#define MADV_COLD_FAST		41	/* fast deactivate pages */
+#define MADV_PAGEOUT_FAST	42	/* fast reclaim pages  */
+#define MADV_WRITEBACK_FAST	43	/* fast writeback pages for PPN */
+#define MADV_PREFETCH_FAST	44	/* fast prefetch pages for PPN */
 
 #define MADV_POPULATE_READ	22	/* populate (prefault) page tables readable */
 #define MADV_POPULATE_WRITE	23	/* populate (prefault) page tables writable */

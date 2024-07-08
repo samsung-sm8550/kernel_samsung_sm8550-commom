@@ -22,3 +22,12 @@ config DMABUF_HEAPS_CMA
 	  Choose this option to enable dma-buf CMA heap. This heap is backed
 	  by the Contiguous Memory Allocator (CMA). If your system has these
 	  regions, you should say Y here.
+
+config RBIN
+	bool "DMA-BUF RBIN Samsung Heap"
+	depends on DMABUF_HEAPS && CLEANCACHE
+	default m
+	help
+	  Choose this option to enable dma-buf rbin heap for samsung.
+	  This heap supports both dmabuf allocation for camera and
+	  operations for cleancache backend.

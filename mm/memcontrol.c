@@ -3606,21 +3606,21 @@ static int mem_cgroup_hierarchy_write(struct cgroup_subsys_state *css,
 
 static unsigned long mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
 {
-	unsigned long val;
+    unsigned long val;
 
-	if (mem_cgroup_is_root(memcg)) {
-		mem_cgroup_flush_stats();
-		val = memcg_page_state(memcg, NR_FILE_PAGES) +
-			memcg_page_state(memcg, NR_ANON_MAPPED);
-		if (swap)
-			val += memcg_page_state(memcg, MEMCG_SWAP);
-	} else {
-		if (!swap)
-			val = page_counter_read(&memcg->memory);
-		else
-			val = page_counter_read(&memcg->memsw);
-	}
-	return val;
+    if (mem_cgroup_is_root(memcg)) {
+        mem_cgroup_flush_stats();
+        val = memcg_page_state(memcg, NR_FILE_PAGES) +
+            memcg_page_state(memcg, NR_ANON_MAPPED);
+        if (swap)
+            val += memcg_page_state(memcg, MEMCG_SWAP);
+    } else {
+        if (!swap)
+            val = page_counter_read(&memcg->memory);
+        else
+            val = page_counter_read(&memcg->memsw);
+    }
+    return val;
 }
 
 enum {

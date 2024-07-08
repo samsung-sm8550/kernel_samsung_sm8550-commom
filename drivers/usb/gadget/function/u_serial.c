@@ -564,7 +564,7 @@ static int gs_start_io(struct gs_port *port)
 	port->n_read = 0;
 	started = gs_start_rx(port);
 
-	if (started) {
+	if (started && port->port.tty) {
 		gs_start_tx(port);
 		/* Unblock any pending writes into our circular buffer, in case
 		 * we didn't in gs_start_tx() */
@@ -1377,8 +1377,9 @@ void gserial_disconnect(struct gserial *gser)
 	struct gs_port	*port = gser->ioport;
 	unsigned long	flags;
 
-	if (!port)
+	if (!port){
 		return;
+	}
 
 	spin_lock_irqsave(&serial_port_lock, flags);
 

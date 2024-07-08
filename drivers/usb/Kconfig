@@ -26,6 +26,15 @@ config USB_UHCI_BIG_ENDIAN_MMIO
 config USB_UHCI_BIG_ENDIAN_DESC
 	bool
 
+config USB_HOST_SAMSUNG_FEATURE
+	bool "USB Host Samsung Feature"
+	depends on USB
+	help
+	 USB Host Samsung Feature.
+	 It is different from LSI BSP code.
+	 If samsung engineer changes kernel code,
+	 use this feature,
+
 menuconfig USB_SUPPORT
 	bool "USB support"
 	depends on HAS_IOMEM

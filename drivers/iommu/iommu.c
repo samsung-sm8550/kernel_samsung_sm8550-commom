@@ -207,11 +207,14 @@ static struct dev_iommu *dev_iommu_get(struct device *dev)
 static void dev_iommu_free(struct device *dev)
 {
 	struct dev_iommu *param = dev->iommu;
+	struct iommu_fwspec *fwspec = param->fwspec;
 
-	dev->iommu = NULL;
-	if (param->fwspec) {
-		fwnode_handle_put(param->fwspec->iommu_fwnode);
-		kfree(param->fwspec);
+	WRITE_ONCE(param->fwspec, NULL);
+	smp_rmb();
+	WRITE_ONCE(dev->iommu, NULL);
+	if (fwspec) {
+		fwnode_handle_put(fwspec->iommu_fwnode);
+		kfree(fwspec);
 	}
 	kfree(param);
 }

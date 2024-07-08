@@ -87,7 +87,6 @@ struct fw_priv {
 };
 
 extern struct mutex fw_lock;
-extern bool fw_load_abort_all;
 
 static inline bool __fw_state_check(struct fw_priv *fw_priv,
 				    enum fw_status status)

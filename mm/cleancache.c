@@ -300,6 +300,20 @@ void __cleancache_invalidate_fs(struct super_block *sb)
 }
 EXPORT_SYMBOL(__cleancache_invalidate_fs);
 
+int rbin_oem_func(int cmd, int *stats)
+{
+	rbin_module_oem_func module_fn;
+
+	if (!cleancache_ops)
+		return 0;
+
+	module_fn = (rbin_module_oem_func)cleancache_ops->android_oem_data1;
+	if (module_fn)
+		return module_fn(cmd, stats);
+
+	return 0;
+}
+
 static int __init init_cleancache(void)
 {
 #ifdef CONFIG_DEBUG_FS

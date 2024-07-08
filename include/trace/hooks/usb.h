@@ -22,6 +22,14 @@ DECLARE_HOOK(android_vh_usb_new_device_added,
 	TP_PROTO(struct usb_device *udev, int *err),
 	TP_ARGS(udev, err));
 
+DECLARE_HOOK(android_vh_usb_dev_suspend,
+	TP_PROTO(struct usb_device *udev, pm_message_t msg, int *bypass),
+	TP_ARGS(udev, msg, bypass));
+
+DECLARE_HOOK(android_vh_usb_dev_resume,
+	TP_PROTO(struct usb_device *udev, pm_message_t msg, int *bypass),
+	TP_ARGS(udev, msg, bypass));
+
 DECLARE_HOOK(android_vh_xhci_urb_suitable_bypass,
 	TP_PROTO(struct urb *urb, int *ret),
 	TP_ARGS(urb, ret));

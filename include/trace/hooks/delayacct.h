@@ -44,6 +44,9 @@ DECLARE_HOOK(android_vh_delayacct_add_tsk,
 DECLARE_HOOK(android_vh_delayacct_blkio_ticks,
 	TP_PROTO(struct task_struct *tsk, __u64 *ret),
 	TP_ARGS(tsk, ret));
+DECLARE_HOOK(android_vh_delayacct_blkio_nsecs,
+	TP_PROTO(struct task_struct *tsk, __u64 *ret),
+	TP_ARGS(tsk, ret));
 DECLARE_HOOK(android_vh_delayacct_is_task_waiting_on_io,
 	TP_PROTO(struct task_struct *tsk, int *ret),
 	TP_ARGS(tsk, ret));
