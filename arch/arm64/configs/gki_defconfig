@@ -1,16 +1,16 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 5.15.151 Kernel Configuration
+# Linux/arm64 5.15.156 Kernel Configuration
 #
-CONFIG_CC_VERSION_TEXT="Android (11967740, +pgo, +bolt, +lto, +mlgo, based on r522817) clang version 18.0.1 (https://android.googlesource.com/toolchain/llvm-project d8003a456d14a3deb8054cdaa529ffbf02d9b262)"
+CONFIG_CC_VERSION_TEXT="Android (12085363, +pgo, +bolt, +lto, +mlgo, based on r530567) clang version 19.0.0 (https://android.googlesource.com/toolchain/llvm-project 97a699bf4812a18fb657c2779f5296a4ab2694d2)"
 CONFIG_GCC_VERSION=0
 CONFIG_CC_IS_CLANG=y
-CONFIG_CLANG_VERSION=180001
+CONFIG_CLANG_VERSION=190000
 CONFIG_AS_IS_LLVM=y
-CONFIG_AS_VERSION=180001
+CONFIG_AS_VERSION=190000
 CONFIG_LD_VERSION=0
 CONFIG_LD_IS_LLD=y
-CONFIG_LLD_VERSION=180001
+CONFIG_LLD_VERSION=190000
 CONFIG_CC_HAS_ASM_GOTO=y
 CONFIG_CC_HAS_ASM_GOTO_OUTPUT=y
 CONFIG_CC_HAS_ASM_GOTO_TIED_OUTPUT=y
@@ -761,6 +761,7 @@ CONFIG_ARCH_HAS_GCOV_PROFILE_ALL=y
 # end of GCOV-based kernel profiling
 
 CONFIG_HAVE_GCC_PLUGINS=y
+CONFIG_FUNCTION_ALIGNMENT=0
 # end of General architecture-dependent options
 
 CONFIG_RT_MUTEXES=y
@@ -1590,8 +1591,7 @@ CONFIG_RFKILL=y
 CONFIG_RFKILL_LEDS=y
 # CONFIG_RFKILL_INPUT is not set
 # CONFIG_RFKILL_GPIO is not set
-# CONFIG_NET_9P_VIRTIO is not set
-# CONFIG_NET_9P_DEBUG is not set
+# CONFIG_NET_9P is not set
 # CONFIG_CAIF is not set
 # CONFIG_CEPH_LIB is not set
 CONFIG_NFC=y
@@ -1710,6 +1710,7 @@ CONFIG_PCI_ENDPOINT=y
 # CONFIG_PCI_ENDPOINT_CONFIGFS is not set
 # CONFIG_PCI_EPF_TEST is not set
 # CONFIG_PCI_EPF_NTB is not set
+# CONFIG_PCI_EPF_VNTB is not set
 # end of PCI Endpoint
 
 #
@@ -6112,7 +6113,6 @@ CONFIG_NETWORK_FILESYSTEMS=y
 # CONFIG_SMB_SERVER is not set
 # CONFIG_CODA_FS is not set
 # CONFIG_AFS_FS is not set
-# CONFIG_9P_FS is not set
 CONFIG_NLS=y
 CONFIG_NLS_DEFAULT="iso8859-1"
 CONFIG_NLS_CODEPAGE_437=y
