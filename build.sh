@@ -3,7 +3,7 @@
 #set -e
 
 KERNEL_DEFCONFIG=gki_defconfig
-CLANG_VERSION=clang-r530567
+CLANG_VERSION=clang-r536225
 CLANG_DIR="$HOME/tools/google-clang"
 CLANG_BINARY="$CLANG_DIR/bin/clang"
 export PATH="$CLANG_DIR/bin:$PATH"
