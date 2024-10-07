@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 5.15.161 Kernel Configuration
+# Linux/arm64 5.15.165 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="Android (12414805, +pgo, +bolt, +lto, +mlgo, based on r536225) clang version 19.0.1 (https://android.googlesource.com/toolchain/llvm-project b3a530ec6537146650e42be89f1089e9a3588460)"
 CONFIG_GCC_VERSION=0
@@ -384,6 +384,7 @@ CONFIG_ARM64_ERRATUM_2054223=y
 CONFIG_ARM64_ERRATUM_2067961=y
 CONFIG_ARM64_ERRATUM_2441009=y
 CONFIG_ARM64_ERRATUM_2457168=y
+CONFIG_ARM64_ERRATUM_3194386=y
 CONFIG_CAVIUM_ERRATUM_22375=y
 CONFIG_CAVIUM_ERRATUM_23154=y
 CONFIG_FUJITSU_ERRATUM_010001=y
