@@ -1500,7 +1500,7 @@ void fuse_free_conn(struct fuse_conn *fc)
 	WARN_ON(!list_empty(&fc->devices));
 	idr_for_each(&fc->passthrough_req, free_fuse_passthrough, NULL);
 	idr_destroy(&fc->passthrough_req);
-	kfree_rcu(fc, rcu);
+	kfree(fc);
 }
 EXPORT_SYMBOL_GPL(fuse_free_conn);
 
