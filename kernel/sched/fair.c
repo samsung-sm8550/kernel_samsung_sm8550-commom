@@ -7569,6 +7569,8 @@ again:
 		}
 
 		se = pick_next_entity(cfs_rq, curr);
+		if (unlikely(!se))
+			goto again;
 		cfs_rq = group_cfs_rq(se);
 	} while (cfs_rq);
 
@@ -7633,6 +7635,10 @@ again:
 		}
 
 		se = pick_next_entity(cfs_rq, curr);
+		if (unlikely(!se)) {
+			cfs_rq = &rq->cfs;
+			goto again;
+		}
 		cfs_rq = group_cfs_rq(se);
 	} while (cfs_rq);
 
@@ -7676,6 +7682,10 @@ simple:
 
 	do {
 		se = pick_next_entity(cfs_rq, NULL);
+		if (unlikely(!se)) {
+			cfs_rq = &rq->cfs;
+			goto again;
+		}
 		set_next_entity(cfs_rq, se);
 		cfs_rq = group_cfs_rq(se);
 	} while (cfs_rq);
