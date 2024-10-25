@@ -24,8 +24,10 @@ fi
 make -j$(nproc --all) CC=clang \
                       LD=ld.lld \
                       LLVM=1 \
+                      LLVM_IAS=1 \
                       $KERNEL_DEFCONFIG
  
 make -j$(nproc --all) CC=clang \
                       LD=ld.lld \
-                      LLVM=1
+                      LLVM=1 \
+                      LLVM_IAS=1
