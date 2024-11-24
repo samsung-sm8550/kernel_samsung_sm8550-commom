@@ -1,8 +1,8 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 5.15.167 Kernel Configuration
+# Linux/arm64 5.15.168 Kernel Configuration
 #
-CONFIG_CC_VERSION_TEXT="Android (12519410, +pgo, +bolt, +lto, +mlgo, based on r536225) clang version 19.0.1 (https://android.googlesource.com/toolchain/llvm-project b3a530ec6537146650e42be89f1089e9a3588460)"
+CONFIG_CC_VERSION_TEXT="Android (12602325, +pgo, +bolt, +lto, +mlgo, based on r536225) clang version 19.0.1 (https://android.googlesource.com/toolchain/llvm-project b3a530ec6537146650e42be89f1089e9a3588460)"
 CONFIG_GCC_VERSION=0
 CONFIG_CC_IS_CLANG=y
 CONFIG_CLANG_VERSION=190001
@@ -6185,6 +6185,9 @@ CONFIG_KEYS=y
 # CONFIG_ENCRYPTED_KEYS is not set
 # CONFIG_KEY_DH_OPERATIONS is not set
 # CONFIG_SECURITY_DMESG_RESTRICT is not set
+CONFIG_PROC_MEM_ALWAYS_FORCE=y
+# CONFIG_PROC_MEM_FORCE_PTRACE is not set
+# CONFIG_PROC_MEM_NO_FORCE is not set
 CONFIG_SECURITY=y
 CONFIG_SECURITYFS=y
 CONFIG_SECURITY_NETWORK=y
