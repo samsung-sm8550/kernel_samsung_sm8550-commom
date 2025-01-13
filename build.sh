@@ -81,7 +81,7 @@ fi
 # if include susfs4ksu, H61M-Kernel-$(make kernelversion)-NEXT-SUSFS.zip
 
 # Determine kernel version
-KERNEL_VERSION=$(make kernelversion)
+KERNEL_VERSION=$(make kernelversion | grep -v "Entering\|Leaving")
 
 # Determine the zip file name
 ZIP_NAME="H61M-Kernel-$KERNEL_VERSION"
