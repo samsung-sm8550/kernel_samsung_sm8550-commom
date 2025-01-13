@@ -65,3 +65,42 @@ make -j$(nproc --all) CC=clang \
                       LD=ld.lld \
                       LLVM=1 \
                       LLVM_IAS=1
+
+# If build is successful, copy the /out/arch/arm64/boot/Image to anykernel3 folder
+if [ -f "out/arch/arm64/boot/Image" ]; then
+    cp out/arch/arm64/boot/Image anykernel3/
+    echo "Kernel built successfully!"
+else
+    echo "Kernel build failed!"
+    exit 1
+fi
+
+# make zip file
+# H61M-Kernel-$(make kernelversion).zip
+# if include kernelsu, H61M-Kernel-$(make kernelversion)-NEXT.zip
+# if include susfs4ksu, H61M-Kernel-$(make kernelversion)-NEXT-SUSFS.zip
+
+# Determine kernel version
+KERNEL_VERSION=$(make kernelversion)
+
+# Determine the zip file name
+ZIP_NAME="H61M-Kernel-$KERNEL_VERSION"
+if [ "$KernelSU" = true ]; then
+    ZIP_NAME="$ZIP_NAME-NEXT"
+    if [ "$SUSFS4KSU" = true ]; then
+        ZIP_NAME="$ZIP_NAME-SUSFS"
+    fi
+fi
+ZIP_NAME="$ZIP_NAME.zip"
+
+# Create the zip file
+if [ -d "anykernel3" ]; then
+    echo "Creating zip file: $ZIP_NAME"
+    cd anykernel3
+    zip -r9 "../$ZIP_NAME" ./*
+    cd ..
+    echo "Zip file created: $ZIP_NAME"
+else
+    echo "Anykernel3 folder not found! Cannot create zip file."
+    exit 1
+fi
