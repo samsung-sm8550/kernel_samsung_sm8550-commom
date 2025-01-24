@@ -43,7 +43,7 @@ fi
 if [ "$KernelSU" = true ]; then
     if [ "$SUSFS4KSU" = true ]; then
         echo "SUSFS4KSU is enabled. Cloning GalaxyBuild KernelSU-Next..."
-        curl -sL curl -sL https://raw.githubusercontent.com/galaxybuild-project/tools/refs/heads/main/Scripts/KernelSU-SuSFS.sh | bash -s newerpatch
+        curl -sL https://raw.githubusercontent.com/galaxybuild-project/tools/refs/heads/main/Scripts/KernelSU-SuSFS.sh | bash -s newerpatch
         ensure_config arch/arm64/configs/$KERNEL_DEFCONFIG CONFIG_KSU CONFIG_KSU_SUSFS CONFIG_KSU_SUSFS_SUS_SU KSU_SUSFS_HAS_MAGIC_MOUNT
     else
         if [ ! -d "KernelSU" ]; then
