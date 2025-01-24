@@ -2998,7 +2998,6 @@ static int may_delete(struct user_namespace *mnt_userns, struct inode *dir,
 		return error;
 	if (IS_APPEND(dir))
 		return -EPERM;
-
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 	if (unlikely(inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		return -ENOENT;
@@ -3039,7 +3038,6 @@ static inline int may_create(struct user_namespace *mnt_userns,
 	int error;
 #endif
 	audit_inode_child(dir, child, AUDIT_TYPE_CHILD_CREATE);
-
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 	if (child->d_inode && unlikely(child->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		error = inode_permission(mnt_userns, dir, MAY_WRITE | MAY_EXEC);
@@ -3049,6 +3047,7 @@ static inline int may_create(struct user_namespace *mnt_userns,
 		return -ENOENT;
 	}
 #endif
+
 
 	if (child->d_inode)
 		return -EEXIST;
@@ -3276,7 +3275,6 @@ static int may_open(struct user_namespace *mnt_userns, const struct path *path,
 
 	if (!inode)
 		return -ENOENT;
-
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 	if (unlikely(inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
 		return -ENOENT;
