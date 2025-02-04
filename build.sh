@@ -43,16 +43,51 @@ fi
 if [ "$KernelSU" = true ]; then
     if [ "$SUSFS4KSU" = true ]; then
         echo "SUSFS4KSU is enabled. Cloning GalaxyBuild KernelSU-Next..."
-        curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs
+        curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -s next
         ensure_config arch/arm64/configs/$KERNEL_DEFCONFIG CONFIG_KSU CONFIG_KSU_SUSFS CONFIG_KSU_SUSFS_SUS_SU KSU_SUSFS_HAS_MAGIC_MOUNT
     else
         if [ ! -d "KernelSU" ]; then
             echo "KernelSU folder not found. Cloning..."
-            curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
+            curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -s next
         fi
         ensure_config arch/arm64/configs/$KERNEL_DEFCONFIG CONFIG_KSU
     fi
 fi
+
+
+### Clone SusFS for KernelSU
+    git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android13-5.15
+    echo "SusFS cloned successfully!"
+
+        
+##################
+# Copy necessary files and patches
+    # cp susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch KernelSU/
+    cp KernelSU-Next-Implement-SUSFS-v1.5.5-Universal.patch KernelSU/
+    echo "Copying patch for SuSFS successfully"
+
+        
+#### Copy Patches To Core Kernel
+    cp susfs4ksu/kernel_patches/50_add_susfs_in_gki-android13-5.15.patch .
+    # cp Fixes/69_hide_stuff.patch .
+    # cp Fixes/susfs.c_fix_ksu.patch .
+    cp susfs4ksu/kernel_patches/fs/* fs/
+    cp susfs4ksu/kernel_patches/include/linux/* include/linux/
+
+### Apply SuSFS Patch To KernelSU
+    cd KernelSU
+    # patch -p1 --fuzz=3 --forward < 10_enable_susfs_for_ksu.patch || true
+    patch -p1 --fuzz=3 --forward < KernelSU-Next-Implement-SUSFS-v1.5.5-Universal.patch || true
+    echo "Patching Susfs with KSU successfully"
+    cd ..
+    echo "Back To kernel root folder"
+
+    # Apply SuSFS Patch To Core Kernel
+    patch -p1 --fuzz=3 < 50_add_susfs_in_gki-android13-5.15.patch || true
+    # patch -p1 --fuzz=3 < 69_hide_stuff.patch || true
+    # patch -p1 --fuzz=3 < susfs.c_fix_ksu.patch || true
+
+
 
 # Build Kernel
 make -j$(nproc --all) CC=clang \
