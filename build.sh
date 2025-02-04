@@ -63,7 +63,7 @@ fi
 ##################
 # Copy necessary files and patches
     # cp susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch KernelSU/
-    cp KernelSU-Next-Implement-SUSFS-v1.5.5-Universal.patch KernelSU/
+    cp KernelSU-Next-Implement-SUSFS-v1.5.5-Universal.patch KernelSU-Next/
     echo "Copying patch for SuSFS successfully"
 
         
@@ -75,7 +75,7 @@ fi
     cp susfs4ksu/kernel_patches/include/linux/* include/linux/
 
 ### Apply SuSFS Patch To KernelSU
-    cd KernelSU
+    cd KernelSU-Next
     # patch -p1 --fuzz=3 --forward < 10_enable_susfs_for_ksu.patch || true
     patch -p1 --fuzz=3 --forward < KernelSU-Next-Implement-SUSFS-v1.5.5-Universal.patch || true
     echo "Patching Susfs with KSU successfully"
