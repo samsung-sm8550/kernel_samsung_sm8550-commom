@@ -23,6 +23,18 @@
 #define cfi_failure_handler	__ubsan_handle_cfi_check_fail_abort
 #endif
 
+/*
+ * __cfi_check won't be linked against compiler generated one,
+ * if no KBUILD_CFLAGS_MODULE is passed to compiler.
+ * 
+ * extern void __cfi_check(uint64_t id, void *ptr, void *diag);
+ *
+ */
+void __weak __cfi_check(uint64_t id, void *ptr, void *diag)
+{
+	return;
+}
+
 static inline void handle_cfi_failure(void *ptr)
 {
 	if (IS_ENABLED(CONFIG_CFI_PERMISSIVE))

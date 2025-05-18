@@ -96,6 +96,13 @@ config HAVE_FAST_GUP
 	depends on MMU
 	bool
 
+config MEMBLOCK_MEMSIZE
+	bool "memblock based reserved memory profiling"
+	default y
+	help
+	  This patch introduce a procfs node, memblock/memsize, to see reserved
+	  memory easily.
+
 # Don't discard allocated memory used to track "memory" and "reserved" memblocks
 # after early boot, so it can still be used to test for validity of memory.
 # Also, memblocks are updated with memory hot(un)plug.
@@ -831,6 +838,33 @@ config PERCPU_STATS
 	  information includes global and per chunk statistics, which can
 	  be used to help understand percpu memory usage.
 
+config KSWAPD_CPU
+	hex "Set kswapd cpu affinity by default"
+	default 0x7F
+	help
+	  Set kswapd cpu affinity by default. 0x3F means allowing CPU as 0 to 5.
+	  To disable this config, set this to 0.
+
+config MMAP_READAROUND_LIMIT
+	int "Limit mmap readaround upperbound"
+	default 16
+	help
+	  Inappropriate mmap readaround size can hurt device performance
+	  during the sluggish situation. Add the hard upper-limit for
+	  mmap readaround.
+
+config FAULT_AROUND_BYTES
+	int "Fault around bytes"
+	default 32768
+	range 4096 65536
+	help
+	  The number of bytes to be mapped around the fault.
+
+config DIRECT_RECLAIM_FILE_PAGES_ONLY
+	bool "Reclaim file pages only on direct reclaim path"
+	depends on SWAP
+	default y
+
 config GUP_TEST
 	bool "Enable infrastructure for get_user_pages()-related unit tests"
 	depends on DEBUG_FS
@@ -942,6 +976,15 @@ config LRU_GEN_STATS
 	  This option has a per-memcg and per-node memory overhead.
 # }
 
+config MEMCG_HEIMDALL
+	bool "memcg optimization for heimdall"
+	depends on MEMCG
+	select CONNECTOR
+	default y
+	help
+	  Enable this will change the memcg-related logics in the way Heimdall
+	  prefers.
+
 source "mm/damon/Kconfig"
 
 config ARCH_SUPPORTS_SPECULATIVE_PAGE_FAULT
@@ -966,4 +1009,66 @@ config SPECULATIVE_PAGE_FAULT
 	  an unsupported case, the fault handler falls back to classical
 	  processing using the mmap read lock.
 
+config PAGE_BOOST
+	bool "PAGE_BOOST feature"
+	depends on MMU
+	default y
+	help
+	  Enable this for PAGE_BOOST feature
+
+config PAGE_BOOST_RECORDING
+	bool "PAGE_BOOST recording feature"
+	depends on PAGE_BOOST
+	default y
+	help
+	  Record Everything for the chosen process.
+	  As Android executes an app one by one, only allow 1 recording
+	  at a time.
+
+config KZEROD
+	bool "Support kzerod"
+	default y
+	depends on !NEED_MULTIPLE_NODES
+	depends on TRANSPARENT_HUGEPAGE
+	help
+	  Support kzerod kernel thread which does prezeroing of free pages.
+
+config KZEROD_ENABLE
+	bool "enabling kzerod thread"
+	default n
+	depends on KZEROD
+	help
+	  Enable to create the kzerod thread.
+
+config HUGEPAGE_POOL
+	bool "hugepage pool management"
+	default y
+	depends on KZEROD && !HIGHMEM && !ZONE_DEVICE
+	depends on TRANSPARENT_HUGEPAGE
+	help
+	  Enable this to provide 2MB hugepage to THP anon, ION, and GPU memory
+	  allocation requests efficiently.
+
+config HUGEPAGE_POOL_DEBUG
+	bool "hugepage pool debug"
+	default n
+	depends on HUGEPAGE_POOL
+	help
+	  Show hugepage pool debug logs in kernel log.
+
+config HUGEPAGE_POOL_ALLOW_ALL
+	bool "allow 2MB page for all to debug hugepage pool"
+	default y
+	depends on HUGEPAGE_POOL
+	help
+	  allow 2MB page for all to debug hugepage pool
+
+config TASK_HAS_ALLOC_FREE_STAT
+    bool "let struct task have alloc/free stat"
+	default n
+	help
+	  let struct task have alloc/free stat
+
 endmenu
+
+source "mm/sec_mm/Kconfig"

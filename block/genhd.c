@@ -26,6 +26,12 @@
 #include <linux/pm_runtime.h>
 #include <linux/badblocks.h>
 
+#ifdef CONFIG_BLOCK_SUPPORT_STLOG
+#include <linux/fslog.h>
+#else
+#define ST_LOG(fmt, ...)
+#endif
+
 #include "blk.h"
 #include "blk-rq-qos.h"
 
@@ -352,6 +358,14 @@ void disk_uevent(struct gendisk *disk, enum kobject_action action)
 	struct block_device *part;
 	unsigned long idx;
 
+#ifdef CONFIG_BLOCK_SUPPORT_STLOG
+	int major = disk->major;
+	int first_minor = disk->first_minor;
+#endif
+
+        if (action == KOBJ_ADD)
+	        ST_LOG("<%s> KOBJ_ADD %d:%d", __func__, major, first_minor);
+
 	rcu_read_lock();
 	xa_for_each(&disk->part_tbl, idx, part) {
 		if (bdev_is_partition(part) && !bdev_nr_sectors(part))
@@ -361,6 +375,12 @@ void disk_uevent(struct gendisk *disk, enum kobject_action action)
 
 		rcu_read_unlock();
 		kobject_uevent(bdev_kobj(part), action);
+
+                if (action == KOBJ_ADD) {
+			ST_LOG("<%s> KOBJ_ADD %d:%d", __func__, major,
+		        	                first_minor + part->bd_partno);
+                }
+
 		put_device(&part->bd_device);
 		rcu_read_lock();
 	}
@@ -587,6 +607,9 @@ void del_gendisk(struct gendisk *disk)
 {
 	struct request_queue *q = disk->queue;
 
+#ifdef CONFIG_BLOCK_SUPPORT_STLOG
+	struct device *dev;
+#endif
 	might_sleep();
 
 	if (WARN_ON_ONCE(!disk_live(disk) && !(disk->flags & GENHD_FL_HIDDEN)))
@@ -635,6 +658,11 @@ void del_gendisk(struct gendisk *disk)
 	if (!sysfs_deprecated)
 		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
 	pm_runtime_set_memalloc_noio(disk_to_dev(disk), false);
+#ifdef CONFIG_BLOCK_SUPPORT_STLOG
+	dev = disk_to_dev(disk);
+	ST_LOG("<%s> KOBJ_REMOVE %d:%d %s", __func__,
+		MAJOR(dev->devt), MINOR(dev->devt), dev->kobj.name);
+#endif
 	device_del(disk_to_dev(disk));
 
 	blk_mq_freeze_queue_wait(q);

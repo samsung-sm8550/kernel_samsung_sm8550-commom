@@ -41,9 +41,11 @@ void end_swap_bio_write(struct bio *bio)
 		 * Also clear PG_reclaim to avoid rotate_reclaimable_page()
 		 */
 		set_page_dirty(page);
+#ifndef CONFIG_ZRAM
 		pr_alert_ratelimited("Write-error on swap-device (%u:%u:%llu)\n",
 				     MAJOR(bio_dev(bio)), MINOR(bio_dev(bio)),
 				     (unsigned long long)bio->bi_iter.bi_sector);
+#endif
 		ClearPageReclaim(page);
 	}
 	end_page_writeback(page);
@@ -179,6 +181,12 @@ bad_bmap:
 int swap_writepage(struct page *page, struct writeback_control *wbc)
 {
 	int ret = 0;
+	bool gpu_page = false;
+
+	if (is_gpu_page(page)) {
+		page->mapping = NULL;
+		gpu_page = true;
+	}
 
 	if (try_to_free_swap(page)) {
 		unlock_page(page);
@@ -200,7 +208,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
 		end_page_writeback(page);
 		goto out;
 	}
-	ret = __swap_writepage(page, wbc, end_swap_bio_write);
+	ret = __swap_writepage(page, wbc, end_swap_bio_write, gpu_page);
 out:
 	return ret;
 }
@@ -234,11 +242,14 @@ static void bio_associate_blkg_from_page(struct bio *bio, struct page *page)
 #endif /* CONFIG_MEMCG && CONFIG_BLK_CGROUP */
 
 int __swap_writepage(struct page *page, struct writeback_control *wbc,
-		bio_end_io_t end_write_func)
+		bio_end_io_t end_write_func, bool gpu_page)
 {
 	struct bio *bio;
 	int ret;
 	struct swap_info_struct *sis = page_swap_info(page);
+#if IS_ENABLED(CONFIG_ZRAM)
+	unsigned long offset = (unsigned long)__page_file_index(page);
+#endif
 
 	VM_BUG_ON_PAGE(!PageSwapCache(page), page);
 	if (data_race(sis->flags & SWP_FS_OPS)) {
@@ -284,10 +295,14 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
 
 	ret = bdev_write_page(sis->bdev, swap_page_sector(page), page, wbc);
 	if (!ret) {
+#if IS_ENABLED(CONFIG_ZRAM)
+		if (gpu_page && zram_oem_fn)
+			zram_oem_fn_nocfi(ZRAM_MARK_ENTRY_NON_LRU, NULL,
+					  offset);
+#endif
 		count_swpout_vm_event(page);
 		return 0;
 	}
-
 	bio = bio_alloc(GFP_NOIO, 1);
 	bio_set_dev(bio, sis->bdev);
 	bio->bi_iter.bi_sector = swap_page_sector(page);
@@ -300,6 +315,10 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
 	set_page_writeback(page);
 	unlock_page(page);
 	submit_bio(bio);
+#if IS_ENABLED(CONFIG_ZRAM)
+	if (gpu_page && zram_oem_fn)
+		zram_oem_fn_nocfi(ZRAM_MARK_ENTRY_NON_LRU, NULL, offset);
+#endif
 
 	return 0;
 }

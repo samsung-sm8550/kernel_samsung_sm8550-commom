@@ -37,7 +37,12 @@ config UML_DMA_EMULATION
 config NO_IOMEM
 	bool "disable IOMEM" if EXPERT
 	depends on !INDIRECT_IOMEM
-	default y
+	default y if !KUNIT
+
+config HAS_IOMEM
+	bool "Turns on fake IOMEM support for KUnit"
+	depends on KUNIT
+	select MOCK_IOMEM
 
 config UML_IOMEM_EMULATION
 	bool
@@ -220,6 +225,11 @@ config UML_TIME_TRAVEL_SUPPORT
 	  line help for more details.
 
 	  It is safe to say Y, but you probably don't need this.
+
+config PLATFORM_MOCK
+	bool "Enable a mock architecture used for unit testing."
+	depends on KUNIT && OF
+	default y
 
 endmenu
 

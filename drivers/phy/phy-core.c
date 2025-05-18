@@ -533,8 +533,11 @@ static struct phy *_of_phy_get(struct device_node *np, int index)
 
 	ret = of_parse_phandle_with_args(np, "phys", "#phy-cells",
 		index, &args);
-	if (ret)
+	if (ret) {
+		pr_err("[QCTK] failed to get phys. np->name %s.\n", np->name);
 		return ERR_PTR(-ENODEV);
+	} else
+		pr_err("[QCTK] success to get phys. np->name %s.\n", np->name);
 
 	/* This phy type handled by the usb-phy subsystem for now */
 	if (of_device_is_compatible(args.np, "usb-nop-xceiv"))
@@ -546,6 +549,8 @@ static struct phy *_of_phy_get(struct device_node *np, int index)
 		phy = ERR_PTR(-EPROBE_DEFER);
 		goto out_unlock;
 	}
+
+	dev_err(phy_provider->dev, "[QCTK] success to lookup phys\n");
 
 	if (!of_device_is_available(args.np)) {
 		dev_warn(phy_provider->dev, "Requested PHY is disabled\n");

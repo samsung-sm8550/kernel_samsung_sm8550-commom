@@ -177,6 +177,7 @@ config PM
 config PM_DEBUG
 	bool "Power Management Debug Support"
 	depends on PM
+	default y
 	help
 	This option enables various debugging support in the Power Management
 	code. This is helpful when debugging and reporting PM bugs, like

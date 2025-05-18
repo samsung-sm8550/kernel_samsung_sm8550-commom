@@ -42,6 +42,12 @@
 #include <asm/tlbflush.h>
 #include <asm/shmparam.h>
 
+#ifdef CONFIG_RKP
+#include <linux/uh.h>
+#include <linux/rkp.h>
+#include <linux/moduleloader.h>
+#endif
+
 #include "internal.h"
 #include "pgalloc-track.h"
 
@@ -2647,9 +2653,20 @@ static void __vunmap(const void *addr, int deallocate_pages)
 
 		for (i = 0; i < area->nr_pages; i += 1U << page_order) {
 			struct page *page = area->pages[i];
+#ifdef CONFIG_RKP
+			u64 va;
+#endif
 
 			BUG_ON(!page);
+#ifdef CONFIG_RKP
+			va = (u64)phys_to_virt(page_to_phys(page));
+			if (is_rkp_ro_buffer(va))
+				rkp_ro_free((void *)va);
+			else
+				__free_pages(page, page_order);
+#else
 			__free_pages(page, page_order);
+#endif
 			cond_resched();
 		}
 		atomic_long_sub(area->nr_pages, &nr_vmalloc_pages);
@@ -4077,4 +4094,166 @@ static int __init proc_vmalloc_init(void)
 }
 module_init(proc_vmalloc_init);
 
+#endif
+
+#ifdef CONFIG_RKP
+static void *__vmalloc_area_node_for_module(unsigned long core_text_size, struct vm_struct *area,
+				gfp_t gfp_mask, pgprot_t prot, unsigned int page_shift, int node)
+{
+	const gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
+	unsigned long addr = (unsigned long)area->addr;
+	unsigned long size = get_vm_area_size(area);
+	unsigned long array_size;
+	unsigned int nr_small_pages = size >> PAGE_SHIFT;
+	unsigned int page_order;
+	phys_addr_t p;
+	struct page *page;
+	int i;
+
+	array_size = (unsigned long)nr_small_pages * sizeof(struct page *);
+	gfp_mask |= __GFP_NOWARN;
+	if (!(gfp_mask & (GFP_DMA | GFP_DMA32)))
+		gfp_mask |= __GFP_HIGHMEM;
+
+	/* Please note that the recursion is strictly bounded. */
+	if (array_size > PAGE_SIZE) {
+		area->pages = __vmalloc_node(array_size, 1, nested_gfp, node,
+					area->caller);
+	} else {
+		area->pages = kmalloc_node(array_size, nested_gfp, node);
+	}
+
+	if (!area->pages) {
+		warn_alloc(gfp_mask, NULL,
+			"vmalloc error: size %lu, failed to allocated page array size %lu",
+			nr_small_pages * PAGE_SIZE, array_size);
+		free_vm_area(area);
+		return NULL;
+	}
+
+	set_vm_area_page_order(area, page_shift - PAGE_SHIFT);
+	page_order = vm_area_page_order(area);
+
+	for (i = 0; i < nr_small_pages; i++) {
+		if (i * PAGE_SIZE < core_text_size) {
+			p = rkp_ro_alloc_phys_for_text();
+			if (p) {
+				page = phys_to_page(p);
+			} else {
+				page = alloc_page(gfp_mask);
+			}
+		} else {
+			page = alloc_page(gfp_mask);
+		}
+		if (unlikely(!page))
+			break;
+		area->pages[area->nr_pages++] = page;
+	}
+	area->nr_pages = i;
+
+	atomic_long_add(area->nr_pages, &nr_vmalloc_pages);
+
+	/*
+	 * If not enough pages were obtained to accomplish an
+	 * allocation request, free them via __vfree() if any.
+	 */
+	if (area->nr_pages != nr_small_pages) {
+		warn_alloc(gfp_mask, NULL,
+			"vmalloc error: size %lu, page order %u, failed to allocate pages",
+			area->nr_pages * PAGE_SIZE, page_order);
+		goto fail;
+	}
+
+	if (vmap_pages_range(addr, addr + size, prot, area->pages,
+			page_shift) < 0) {
+		warn_alloc(gfp_mask, NULL,
+			"vmalloc error: size %lu, failed to map pages",
+			area->nr_pages * PAGE_SIZE);
+		goto fail;
+	}
+
+	return area->addr;
+
+fail:
+	__vfree(area->addr);
+	return NULL;
+}
+
+void *__vmalloc_node_range_for_module(unsigned long core_layout_size, unsigned long core_text_size,
+			unsigned long align, unsigned long start, unsigned long end, gfp_t gfp_mask,
+			pgprot_t prot, unsigned long vm_flags, int node,
+			const void *caller)
+{
+	struct vm_struct *area;
+	void *ret;
+	kasan_vmalloc_flags_t kasan_flags = KASAN_VMALLOC_NONE;
+	unsigned long real_size = core_layout_size;
+	unsigned int shift = PAGE_SHIFT;
+
+	if (WARN_ON_ONCE(!core_layout_size))
+		return NULL;
+
+	area = __get_vm_area_node(real_size, align, shift, VM_ALLOC |
+				  VM_UNINITIALIZED | vm_flags, start, end, node,
+				  gfp_mask, caller);
+	if (!area) {
+		warn_alloc(gfp_mask, NULL,
+			"vmalloc error: size %lu, vm_struct allocation failed",
+			real_size);
+		return NULL;
+	}
+
+	/*
+	 * Prepare arguments for __vmalloc_area_node() and
+	 * kasan_unpoison_vmalloc().
+	 */
+	if (pgprot_val(prot) == pgprot_val(PAGE_KERNEL)) {
+		if (kasan_hw_tags_enabled()) {
+			/*
+			 * Modify protection bits to allow tagging.
+			 * This must be done before mapping.
+			 */
+			prot = arch_vmap_pgprot_tagged(prot);
+
+			/*
+			 * Skip page_alloc poisoning and zeroing for physical
+			 * pages backing VM_ALLOC mapping. Memory is instead
+			 * poisoned and zeroed by kasan_unpoison_vmalloc().
+			 */
+			gfp_mask |= __GFP_SKIP_KASAN_UNPOISON | __GFP_SKIP_ZERO;
+		}
+
+		/* Take note that the mapping is PAGE_KERNEL. */
+		kasan_flags |= KASAN_VMALLOC_PROT_NORMAL;
+	}
+
+	/* Allocate physical pages and map them into vmalloc space. */
+	ret = __vmalloc_area_node_for_module(core_text_size, area, gfp_mask, prot, shift, node);
+	if (!ret)
+		return NULL;
+
+	/*
+	 * Mark the pages as accessible, now that they are mapped.
+	 * The init condition should match the one in post_alloc_hook()
+	 * (except for the should_skip_init() check) to make sure that memory
+	 * is initialized under the same conditions regardless of the enabled
+	 * KASAN mode.
+	 * Tag-based KASAN modes only assign tags to normal non-executable
+	 * allocations, see __kasan_unpoison_vmalloc().
+	 */
+	kasan_flags |= KASAN_VMALLOC_VM_ALLOC;
+	if (!want_init_on_free() && want_init_on_alloc(gfp_mask))
+		kasan_flags |= KASAN_VMALLOC_INIT;
+	/* KASAN_VMALLOC_PROT_NORMAL already set if required. */
+	area->addr = kasan_unpoison_vmalloc(area->addr, real_size, kasan_flags);
+
+	/*
+	 * In this function, newly allocated vm_struct has VM_UNINITIALIZED
+	 * flag. It means that vm_struct is not fully initialized.
+	 * Now, it is fully initialized, so remove this flag here.
+	 */
+	clear_vm_uninitialized_flag(area);
+
+	return area->addr;
+}
 #endif

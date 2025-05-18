@@ -219,4 +219,10 @@ config GENERIC_ARCH_NUMA
 	  Enable support for generic NUMA implementation. Currently, RISC-V
 	  and ARM64 use it.
 
+config CPU_CAPACITY_FIXUP
+	bool
+	default y
+	help
+     Enable to avoid that unity set cpuset of its client task to big core only.
+
 endmenu

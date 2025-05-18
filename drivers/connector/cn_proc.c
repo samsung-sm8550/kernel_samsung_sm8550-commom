@@ -20,6 +20,8 @@
 #include <linux/cn_proc.h>
 #include <linux/local_lock.h>
 
+extern int is_heimdall_enabled;
+
 /*
  * Size of a cn_msg followed by a proc_event structure.  Since the
  * sizeof struct cn_msg is a multiple of 4 bytes, but not 8 bytes, we
@@ -38,6 +40,10 @@ static inline struct cn_msg *buffer_to_cn_msg(__u8 *buffer)
 
 static atomic_t proc_event_num_listeners = ATOMIC_INIT(0);
 static struct cb_id cn_proc_event_id = { CN_IDX_PROC, CN_VAL_PROC };
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+#define MAX_PROC_EVENTS 32
+static atomic_t proc_event_selected[MAX_PROC_EVENTS] = {ATOMIC_INIT(0), };
+#endif
 
 /* local_event.count is used as the sequence number of the netlink message */
 struct local_event {
@@ -75,6 +81,10 @@ void proc_fork_connector(struct task_struct *task)
 
 	if (atomic_read(&proc_event_num_listeners) < 1)
 		return;
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	if (atomic_read(&proc_event_selected[__ffs(PROC_EVENT_FORK)]) < 1)
+		return;
+#endif
 
 	msg = buffer_to_cn_msg(buffer);
 	ev = (struct proc_event *)msg->data;
@@ -104,6 +114,10 @@ void proc_exec_connector(struct task_struct *task)
 
 	if (atomic_read(&proc_event_num_listeners) < 1)
 		return;
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	if (atomic_read(&proc_event_selected[__ffs(PROC_EVENT_EXEC)]) < 1)
+		return;
+#endif
 
 	msg = buffer_to_cn_msg(buffer);
 	ev = (struct proc_event *)msg->data;
@@ -129,6 +143,11 @@ void proc_id_connector(struct task_struct *task, int which_id)
 
 	if (atomic_read(&proc_event_num_listeners) < 1)
 		return;
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	if (atomic_read(&proc_event_selected[__ffs(PROC_EVENT_UID)]) < 1 &&
+			atomic_read(&proc_event_selected[__ffs(PROC_EVENT_GID)]) < 1)
+		return;
+#endif
 
 	msg = buffer_to_cn_msg(buffer);
 	ev = (struct proc_event *)msg->data;
@@ -166,6 +185,10 @@ void proc_sid_connector(struct task_struct *task)
 
 	if (atomic_read(&proc_event_num_listeners) < 1)
 		return;
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	if (atomic_read(&proc_event_selected[__ffs(PROC_EVENT_SID)]) < 1)
+		return;
+#endif
 
 	msg = buffer_to_cn_msg(buffer);
 	ev = (struct proc_event *)msg->data;
@@ -190,6 +213,10 @@ void proc_ptrace_connector(struct task_struct *task, int ptrace_id)
 
 	if (atomic_read(&proc_event_num_listeners) < 1)
 		return;
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	if (atomic_read(&proc_event_selected[__ffs(PROC_EVENT_PTRACE)]) < 1)
+		return;
+#endif
 
 	msg = buffer_to_cn_msg(buffer);
 	ev = (struct proc_event *)msg->data;
@@ -222,6 +249,12 @@ void proc_comm_connector(struct task_struct *task)
 
 	if (atomic_read(&proc_event_num_listeners) < 1)
 		return;
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	if (atomic_read(&proc_event_selected[__ffs(PROC_EVENT_COMM)]) < 1)
+		return;
+	if (task->pid != task->tgid)
+		return;
+#endif
 
 	msg = buffer_to_cn_msg(buffer);
 	ev = (struct proc_event *)msg->data;
@@ -248,6 +281,10 @@ void proc_coredump_connector(struct task_struct *task)
 
 	if (atomic_read(&proc_event_num_listeners) < 1)
 		return;
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	if (atomic_read(&proc_event_selected[__ffs(PROC_EVENT_COREDUMP)]) < 1)
+		return;
+#endif
 
 	msg = buffer_to_cn_msg(buffer);
 	ev = (struct proc_event *)msg->data;
@@ -281,6 +318,10 @@ void proc_exit_connector(struct task_struct *task)
 
 	if (atomic_read(&proc_event_num_listeners) < 1)
 		return;
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	if (atomic_read(&proc_event_selected[__ffs(PROC_EVENT_EXIT)]) < 1)
+		return;
+#endif
 
 	msg = buffer_to_cn_msg(buffer);
 	ev = (struct proc_event *)msg->data;
@@ -347,9 +388,18 @@ static void cn_proc_mcast_ctl(struct cn_msg *msg,
 			      struct netlink_skb_parms *nsp)
 {
 	enum proc_cn_mcast_op *mc_op = NULL;
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	uint32_t mask = 0;
+	uint32_t i;
+#endif
 	int err = 0;
 
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	if ((msg->len != sizeof(*mc_op) + sizeof(uint32_t)) &&
+	    (msg->len != sizeof(*mc_op)))
+#else
 	if (msg->len != sizeof(*mc_op))
+#endif
 		return;
 
 	/* 
@@ -368,12 +418,33 @@ static void cn_proc_mcast_ctl(struct cn_msg *msg,
 	}
 
 	mc_op = (enum proc_cn_mcast_op *)msg->data;
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+	if (msg->len == sizeof(*mc_op))
+		mask = BIT(MAX_PROC_EVENTS) - 1;
+	else
+		mask = *(uint32_t *)(mc_op + 1);
+	pr_info("%s: client connected with event mask=0x%x\n", __func__, mask);
+
+	if (msg->len != sizeof(*mc_op))
+		is_heimdall_enabled = 1;
+#endif
+
 	switch (*mc_op) {
 	case PROC_CN_MCAST_LISTEN:
 		atomic_inc(&proc_event_num_listeners);
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+		for (i = 0; i < MAX_PROC_EVENTS; i++)
+			if (mask & (1 << i))
+				atomic_inc(&proc_event_selected[i]);
+#endif
 		break;
 	case PROC_CN_MCAST_IGNORE:
 		atomic_dec(&proc_event_num_listeners);
+#ifdef CONFIG_PROC_CONNECTOR_SELECT_EVENTS
+		for (i = 0; i < MAX_PROC_EVENTS; i++)
+			if (mask & (1 << i))
+				atomic_dec(&proc_event_selected[i]);
+#endif
 		break;
 	default:
 		err = EINVAL;

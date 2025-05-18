@@ -135,6 +135,7 @@ int kunit_run_all_tests(void)
 
 	return 0;
 }
+EXPORT_SYMBOL_KUNIT(kunit_run_all_tests);
 
 #if IS_BUILTIN(CONFIG_KUNIT_TEST)
 #include "executor_test.c"

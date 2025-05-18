@@ -230,6 +230,7 @@ static int __noreturn rcu_tasks_kthread(void *arg)
 		set_tasks_gp_state(rtp, RTGS_INVOKE_CBS);
 		while (list) {
 			next = list->next;
+			debug_rcu_head_callback(list);
 			local_bh_disable();
 			list->func(list);
 			local_bh_enable();

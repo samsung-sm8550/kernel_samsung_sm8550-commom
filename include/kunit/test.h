@@ -10,6 +10,9 @@
 #define _KUNIT_TEST_H
 
 #include <kunit/assert.h>
+#ifdef CONFIG_SEC_KUNIT
+#include <kunit/kunit-stream.h>
+#endif /* CONFIG_SEC_KUNIT */
 #include <kunit/try-catch.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -276,7 +279,9 @@ struct kunit {
 	 * protect it with some type of lock.
 	 */
 	struct list_head resources; /* Protected by lock. */
-
+#ifdef CONFIG_SEC_KUNIT
+	struct list_head post_conditions;
+#endif /* CONFIG_SEC_KUNIT */
 	char status_comment[KUNIT_STATUS_COMMENT_SIZE];
 };
 
@@ -1881,5 +1886,33 @@ do {									       \
 		}										\
 		return NULL;									\
 	}
+#ifdef CONFIG_SEC_KUNIT
+/*
+ * for mock feature from kunit/alpha/master
+ */
+struct test_initcall {
+	struct list_head node;
+	int (*init)(struct test_initcall *this, struct kunit *test);
+	void (*exit)(struct test_initcall *this);
+};
+
+struct kunit_post_condition {
+	struct list_head node;
+	void (*validate)(struct kunit_post_condition *condition);
+};
+
+void test_install_initcall(struct test_initcall *initcall);
+
+#define test_pure_initcall(fn) postcore_initcall(fn)
+
+#define test_register_initcall(initcall) \
+		static int register_test_initcall_##initcall(void) \
+		{ \
+			test_install_initcall(&initcall); \
+			\
+			return 0; \
+		} \
+		test_pure_initcall(register_test_initcall_##initcall)
+#endif /* CONFIG_SEC_KUNIT */
 
 #endif /* _KUNIT_TEST_H */

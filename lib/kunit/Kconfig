@@ -5,6 +5,7 @@
 menuconfig KUNIT
 	tristate "KUnit - Enable support for unit tests"
 	select GLOB if KUNIT=y
+	select HAS_IOMEM
 	help
 	  Enables support for kernel unit tests (KUnit), a lightweight unit
 	  testing and mocking framework for the Linux kernel. These tests are
@@ -58,5 +59,11 @@ config KUNIT_ALL_TESTS
 	  to the KUnit documentation in Documentation/dev-tools/kunit/.
 
 	  If unsure, say N.
+
+config SEC_KUNIT
+	bool "Enable support for unit tests (KUnit)"
+	help
+	  Deprecated: CONFIG_SEC_KUNIT does not be used anymore. Please use
+	  CONFIG_KUNIT. This is only for previous tests built by SEC_KUNIT.
 
 endif # KUNIT

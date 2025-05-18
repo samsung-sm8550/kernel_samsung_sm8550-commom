@@ -293,6 +293,8 @@ u64 cpu_logical_map(unsigned int cpu)
 	return __cpu_logical_map[cpu];
 }
 
+static void __init __truncate_boot_command_line(void);
+
 void __init __no_sanitize_address setup_arch(char **cmdline_p)
 {
 	setup_initial_init_mm(_stext, _etext, _edata, _end);
@@ -310,6 +312,7 @@ void __init __no_sanitize_address setup_arch(char **cmdline_p)
 	early_ioremap_init();
 
 	setup_machine_fdt(__fdt_pointer);
+	__truncate_boot_command_line();
 
 	/*
 	 * Initialise the static keys early as they may be enabled by the
@@ -452,4 +455,72 @@ void kvm_arm_init_hyp_services(void)
 {
 	kvm_init_ioremap_services();
 	kvm_init_memshare_services();
+}
+
+static bool __init __test_androidboot_boot_recovery(const char *param,
+		const char *val)
+{
+	unsigned int boot_recovery;
+	union {
+		uint64_t raw;
+		char __str[8];
+	} androidboot = {
+		.__str = { 'a', 'n', 'd', 'r', 'o', 'i', 'd', 'b' },
+	};
+
+	/* if param is not started with 'androidb', then it is ignored */
+	if (*(const uint64_t *)param != androidboot.raw)
+		return false;
+
+	if (strcmp(param, "androidboot.boot_recovery"))
+		return false;
+
+	if (kstrtouint(val, 0, &boot_recovery)) {
+		pr_warn("androidboot.boot_recovery is malformed.\n");
+		return false;
+	}
+
+	return !!boot_recovery;
+}
+
+static bool __init __is_boot_recovery(void)
+{
+	static char __tmp_boot_command_line[COMMAND_LINE_SIZE] __initdata;
+	char *param, *val;
+	char *args;
+
+	strlcpy(__tmp_boot_command_line, boot_command_line, COMMAND_LINE_SIZE);
+
+	args = __tmp_boot_command_line;
+	while (*args) {
+		args = next_arg(args, &param, &val);
+
+		if (__test_androidboot_boot_recovery(param, val))
+			return true;
+	}
+
+	return false;
+}
+
+static void __init __truncate_boot_command_line(void)
+{
+	char *to_be_truncated;
+	size_t sz_truncated;
+
+	if (COMMAND_LINE_SIZE <= GKI_COMMAND_LINE_SIZE)
+		return;
+
+	if (strlen(boot_command_line) < GKI_COMMAND_LINE_SIZE)
+		return;
+
+	if (__is_boot_recovery()) {
+		pr_info("current boot_mode is recovery and header_version is maybe '2'\n");
+		return;
+	}
+
+	pr_info("current boot_mode is NOT recovery. kernel command line options will be truncated.\n");
+
+	to_be_truncated = &boot_command_line[GKI_COMMAND_LINE_SIZE];
+	sz_truncated = COMMAND_LINE_SIZE - GKI_COMMAND_LINE_SIZE;
+	memset(to_be_truncated, 0x0, sz_truncated);
 }

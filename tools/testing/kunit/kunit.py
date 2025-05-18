@@ -284,6 +284,9 @@ def add_parse_opts(parser) -> None:
 			    'prints to stdout or saves to file if a '
 			    'filename is specified',
 			    type=str, const='stdout', default=None)
+	parser.add_argument('-t', '--external_config', nargs='+',
+			    help='run kunit with a specific target kunitconfig',
+			    type=str)
 
 def main(argv, linux=None):
 	parser = argparse.ArgumentParser(
@@ -338,7 +341,8 @@ def main(argv, linux=None):
 					arch=cli_args.arch,
 					cross_compile=cli_args.cross_compile,
 					qemu_config_path=cli_args.qemu_config)
-
+		linux.add_external_config(cli_args.external_config)
+		linux.update_config(cli_args.build_dir, cli_args.make_options)
 		request = KunitRequest(cli_args.raw_output,
 				       cli_args.timeout,
 				       cli_args.jobs,

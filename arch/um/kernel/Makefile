@@ -24,6 +24,7 @@ obj-$(CONFIG_GPROF)	+= gprof_syms.o
 obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
 obj-$(CONFIG_STACKTRACE) += stacktrace.o
 obj-$(CONFIG_GENERIC_PCI_IOMAP) += ioport.o
+obj-$(CONFIG_PLATFORM_MOCK)	+= io-mock.o
 
 USER_OBJS := config.o
 

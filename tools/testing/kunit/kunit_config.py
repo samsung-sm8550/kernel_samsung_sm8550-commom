@@ -40,6 +40,9 @@ class Kconfig(object):
 	def add_entry(self, entry: KconfigEntry) -> None:
 		self._entries.append(entry)
 
+	def remove_entry(self, entry: KconfigEntry) -> None:
+		self._entries.remove(entry)
+
 	def is_subset_of(self, other: 'Kconfig') -> bool:
 		other_dict = {e.name: e.value for e in other.entries()}
 		for a in self.entries():

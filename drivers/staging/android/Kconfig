@@ -3,6 +3,12 @@ menu "Android"
 
 if ANDROID
 
+config SAMSUNG_BINDER_MONITOR
+	bool "monitor binder transaction"
+	default n
+	help
+	  monitor binder transaction and resitrict it.
+
 config ASHMEM
 	bool "Enable the Anonymous Shared Memory Subsystem"
 	depends on SHMEM
@@ -24,6 +30,18 @@ config DEBUG_KINFO
 	   - Page directory pointer
 	   - UTS_RELEASE
 	   - BUILD_INFO(ro.build.fingerprint)
+
+config SAMSUNG_LMKD_DEBUG
+	bool "record lmkd kill history"
+	default y
+	help
+	  record lmkd kill history
+
+config SAMSUNG_FREECESS
+	bool "thraw frozen process when recv sig"
+	default n
+	help
+	  thraw frozen process when recv sig.
 
 endif # if ANDROID
 

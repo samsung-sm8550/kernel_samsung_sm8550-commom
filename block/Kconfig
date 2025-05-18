@@ -221,6 +221,11 @@ config BLK_MQ_RDMA
 config BLK_PM
 	def_bool BLOCK && PM
 
+config BLOCK_SUPPORT_STLOG
+	bool "Enable storage log"
+	depends on BLOCK && PROC_STLOG
+	default y
+
 # do not use in new code
 config BLOCK_HOLDER_DEPRECATED
 	bool

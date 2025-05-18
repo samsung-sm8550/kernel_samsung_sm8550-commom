@@ -2016,6 +2016,21 @@ out:
 	return err ? : copied;
 }
 
+__poll_t netlink_poll(struct file *file, struct socket *sock, poll_table *wait)
+{
+	__poll_t mask = datagram_poll(file, sock, wait);
+	struct sock *sk = sock->sk;
+	struct netlink_sock *nlk = nlk_sk(sk);
+
+	if (test_bit(NETLINK_S_CONGESTED, &nlk->state)
+		&& skb_queue_empty_lockless(&sk->sk_receive_queue)) {
+		mask |= EPOLLIN | EPOLLRDNORM;
+
+		pr_info("%s: \n", __func__);
+	}
+	return mask;
+}
+
 static void netlink_data_ready(struct sock *sk)
 {
 	BUG();
@@ -2763,7 +2778,7 @@ static const struct proto_ops netlink_ops = {
 	.socketpair =	sock_no_socketpair,
 	.accept =	sock_no_accept,
 	.getname =	netlink_getname,
-	.poll =		datagram_poll,
+	.poll =		netlink_poll,
 	.ioctl =	netlink_ioctl,
 	.listen =	sock_no_listen,
 	.shutdown =	sock_no_shutdown,

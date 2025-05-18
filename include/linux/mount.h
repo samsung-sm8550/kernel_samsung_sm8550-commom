@@ -87,6 +87,13 @@ static inline struct user_namespace *mnt_user_ns(const struct vfsmount *mnt)
 	return smp_load_acquire(&mnt->mnt_userns);
 }
 
+#ifdef CONFIG_KDP_NS
+struct kdp_vfsmount {
+	struct vfsmount mnt;
+	struct mount *bp_mount;	/* pointer to mount*/
+};
+#endif
+
 struct file; /* forward dec */
 struct path;
 

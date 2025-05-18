@@ -17,6 +17,7 @@
 #include <linux/bio.h>
 #include <linux/sched/signal.h>
 #include <linux/migrate.h>
+#include <linux/cleancache.h>
 #include "trace.h"
 
 #include "../internal.h"
@@ -272,6 +273,15 @@ static loff_t iomap_readpage_iter(const struct iomap_iter *iter,
 
 	if (iomap_block_needs_zeroing(iter, pos)) {
 		zero_user(page, poff, plen);
+		iomap_set_range_uptodate(page, poff, plen);
+		goto done;
+	}
+
+	if (iomap->type == IOMAP_MAPPED)
+		SetPageMappedToDisk(page);
+
+	if (cleancache_get_page(page) == 0) {
+		BUG_ON(iomap->type != IOMAP_MAPPED);
 		iomap_set_range_uptodate(page, poff, plen);
 		goto done;
 	}

@@ -11,6 +11,7 @@ import importlib.util
 import logging
 import subprocess
 import os
+import glob
 import shutil
 import signal
 from typing import Iterator, Optional, Tuple
@@ -30,6 +31,9 @@ BROKEN_ALLCONFIG_PATH = 'tools/testing/kunit/configs/broken_on_uml.config'
 OUTFILE_PATH = 'test.log'
 ABS_TOOL_PATH = os.path.abspath(os.path.dirname(__file__))
 QEMU_CONFIGS_DIR = os.path.join(ABS_TOOL_PATH, 'qemu_configs')
+
+DEFAULT_SUBMODULE_KUNITCONFIG_PATH = 'kunitconfigs'
+PREFIX_SUBMODULE_FILE = 'kunitconfig.'
 
 def get_file_path(build_dir, default):
 	if build_dir:
@@ -227,6 +231,18 @@ def get_source_tree_ops_from_qemu_config(config_path: str,
 	return config.QEMU_ARCH.linux_arch, LinuxSourceTreeOperationsQemu(
 			config.QEMU_ARCH, cross_compile=cross_compile)
 
+def get_submodule_kunitconfig_path(name):
+	return os.path.join(DEFAULT_SUBMODULE_KUNITCONFIG_PATH, PREFIX_SUBMODULE_FILE + '%s' %name)
+
+def get_sub_config(name):
+	submodule_kunitconfig = get_submodule_kunitconfig_path(name)
+	group_submodule_kunitconfig = glob.glob(submodule_kunitconfig + '*')
+
+	if not group_submodule_kunitconfig:
+		return [os.path.join('.', name)]
+	else:
+		return group_submodule_kunitconfig
+
 class LinuxSourceTree(object):
 	"""Represents a Linux kernel source tree with KUnit tests."""
 
@@ -283,6 +299,46 @@ class LinuxSourceTree(object):
 			logging.error(message)
 			return False
 		return True
+
+	def add_external_config(self, ex_config):
+		print("-------- Add External configs ----------")
+		if not ex_config:
+			logging.error("No external config!")
+			return
+		additional_config = kunit_config.Kconfig()
+		for module in ex_config:
+			module_configs = get_sub_config(module)
+			for config in module_configs:
+				if not os.path.exists(config):
+					logging.error("kunitconfig file not found for: %s" %module)
+					continue;
+				additional_config.read_from_file(config)
+				for entry in additional_config.entries():
+					print(entry)
+					self._kconfig.add_entry(entry)
+		print("-------- External configs are added ----------")
+
+	def update_config(self, build_dir, make_options):
+		kconfig_path = get_kconfig_path(build_dir)
+		if build_dir and not os.path.exists(build_dir):
+			os.mkdir(build_dir)
+		try:
+			self._kconfig.write_to_file(kconfig_path)
+			self._ops.make_olddefconfig(build_dir, make_options)
+		except ConfigError as e:
+			logging.error(e)
+			return False
+
+		validated_kconfig = kunit_config.Kconfig()
+		validated_kconfig.read_from_file(kconfig_path)
+		if not self._kconfig.is_subset_of(validated_kconfig):
+			invalid = self._kconfig.entries() - validated_kconfig.entries()
+			message = 'Remove invalid configs: %s' % (
+							', '.join([str(e) for e in invalid]))
+			logging.error(message)
+			for entry in invalid:
+				self._kconfig.remove_entry(entry)
+		print("Configs are Updated!")
 
 	def build_config(self, build_dir, make_options) -> bool:
 		kconfig_path = get_kconfig_path(build_dir)

@@ -1663,6 +1663,15 @@ static void configfs_composite_reset(struct usb_gadget *gadget)
 	if (!cdev)
 		return;
 
+#ifdef CONFIG_USB_CONFIGFS_F_ACC
+	/*
+	* accessory HID support can be active while the
+	* accessory function is not actually enabled,
+	* so we need to inform it when we are disconnected.
+	*/
+	acc_disconnect();
+#endif
+
 	gi = container_of(cdev, struct gadget_info, cdev);
 	spin_lock_irqsave(&gi->spinlock, flags);
 	cdev = get_gadget_data(gadget);
@@ -1670,6 +1679,11 @@ static void configfs_composite_reset(struct usb_gadget *gadget)
 		spin_unlock_irqrestore(&gi->spinlock, flags);
 		return;
 	}
+
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	gi->connected = 0;
+	schedule_work(&gi->work);
+#endif
 
 	composite_reset(gadget);
 	spin_unlock_irqrestore(&gi->spinlock, flags);

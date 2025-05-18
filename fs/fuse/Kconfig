@@ -60,3 +60,8 @@ config FUSE_BPF
 	help
 	  Extends FUSE by adding BPF to prefilter calls and potentially pass to a
 	  backing file system
+
+config FUSE_SUPPORT_STLOG
+	bool "Enable storage log"
+	default y
+	depends on FUSE_FS && PROC_STLOG

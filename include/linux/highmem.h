@@ -166,7 +166,13 @@ static inline struct page *
 alloc_zeroed_user_highpage_movable(struct vm_area_struct *vma,
 				   unsigned long vaddr)
 {
-	struct page *page = alloc_page_vma(GFP_HIGHUSER_MOVABLE | __GFP_CMA, vma, vaddr);
+	struct page *page;
+#if defined(CONFIG_KZEROD_ENABLE)
+	page = alloc_zeroed_page();
+	if (page)
+		return page;
+#endif
+	page = alloc_page_vma(GFP_HIGHUSER_MOVABLE | __GFP_CMA, vma, vaddr);
 
 	if (page)
 		clear_user_highpage(page, vaddr);

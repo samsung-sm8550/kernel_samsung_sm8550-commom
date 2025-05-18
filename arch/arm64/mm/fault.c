@@ -798,7 +798,10 @@ static int do_sea(unsigned long far, unsigned int esr, struct pt_regs *regs)
 		return 0;
 
 	inf = esr_to_fault_info(esr);
-
+	
+	if(user_mode(regs))
+		panic("do_sea");
+		
 	if (user_mode(regs) && apei_claim_sea(regs) == 0) {
 		/*
 		 * APEI claimed this as a firmware-first notification.

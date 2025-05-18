@@ -135,9 +135,11 @@ int freeze_processes(void)
 {
 	int error;
 
+	pr_info("Disabling usermodehelper ... ");
 	error = __usermodehelper_disable(UMH_FREEZING);
 	if (error)
 		return error;
+	pr_cont("done.\n");
 
 	/* Make sure this task doesn't get frozen */
 	current->flags |= PF_SUSPEND_TASK;

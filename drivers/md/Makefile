@@ -24,7 +24,7 @@ dm-cache-smq-y	+= dm-cache-policy-smq.o
 dm-ebs-y	+= dm-ebs-target.o
 dm-era-y	+= dm-era-target.o
 dm-clone-y	+= dm-clone-target.o dm-clone-metadata.o
-dm-verity-y	+= dm-verity-target.o
+dm-verity-y	+= dm-verity-target.o dm-verity-debug.o alta_bigdata.o
 dm-zoned-y	+= dm-zoned-target.o dm-zoned-metadata.o dm-zoned-reclaim.o
 
 md-mod-y	+= md.o md-bitmap.o

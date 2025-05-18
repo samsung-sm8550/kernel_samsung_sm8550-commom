@@ -116,6 +116,16 @@ config FAT_DEFAULT_UTF8
 
 	  See <file:Documentation/filesystems/vfat.rst> for more information.
 
+config FAT_SUPPORT_STLOG
+	bool "Enable storage log"
+	default y
+	depends on FAT_FS && PROC_STLOG
+
+config FAT_UEVENT
+	bool "enable uevent"
+	depends on FAT_FS
+	default y
+
 config FAT_KUNIT_TEST
 	tristate "Unit Tests for FAT filesystems" if !KUNIT_ALL_TESTS
 	depends on KUNIT && FAT_FS

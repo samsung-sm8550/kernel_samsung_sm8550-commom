@@ -80,6 +80,11 @@ notrace int sched_clock_read_retry(unsigned int seq)
 	return read_seqcount_latch_retry(&cd.seq, seq);
 }
 
+/* FIXME: This can make a cache contension problem.
+ * This valiable should be refactored as per_cpu variables.
+ */
+static atomic64_t sec_qc_summary_last_ns __used;
+
 unsigned long long notrace sched_clock(void)
 {
 	u64 cyc, res;
@@ -93,6 +98,8 @@ unsigned long long notrace sched_clock(void)
 		      rd->sched_clock_mask;
 		res = rd->epoch_ns + cyc_to_ns(cyc, rd->mult, rd->shift);
 	} while (sched_clock_read_retry(seq));
+
+	atomic64_set(&sec_qc_summary_last_ns, res);
 
 	return res;
 }

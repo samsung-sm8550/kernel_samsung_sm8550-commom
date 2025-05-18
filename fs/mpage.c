@@ -39,7 +39,10 @@ EXPORT_TRACEPOINT_SYMBOL(android_fs_datawrite_start);
 EXPORT_TRACEPOINT_SYMBOL(android_fs_datawrite_end);
 EXPORT_TRACEPOINT_SYMBOL(android_fs_dataread_start);
 EXPORT_TRACEPOINT_SYMBOL(android_fs_dataread_end);
-
+#ifdef CONFIG_F2FS_ML_BASED_STREAM_SEPARATION
+EXPORT_TRACEPOINT_SYMBOL(android_fs_datawrite_start_wb);
+EXPORT_TRACEPOINT_SYMBOL(android_fs_separation_start);
+#endif
 /*
  * I/O completion handler for multipage BIOs.
  *

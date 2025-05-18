@@ -677,4 +677,16 @@ void vunmap_range_noflush(unsigned long start, unsigned long end);
 int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
 		      unsigned long addr, int page_nid, int *flags);
 
+#ifdef CONFIG_HUGEPAGE_POOL
+#include <linux/hugepage_pool.h>
+static inline struct page *alloc_from_hugepage_pool(gfp_t gfp_mask,
+		struct vm_area_struct *vma, unsigned long addr, int order) {
+	return alloc_zeroed_hugepage(gfp_mask, order, false, HPAGE_ANON);
+}
+extern void ___free_pages_ok(struct page *page, unsigned int order,
+		      int __bitwise fpi_flags, bool skip_hugepage_pool);
+extern void prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags,
+						unsigned int alloc_flags);
+void compact_node_async(void);
+#endif
 #endif	/* __MM_INTERNAL_H */

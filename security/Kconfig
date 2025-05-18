@@ -231,8 +231,15 @@ source "security/yama/Kconfig"
 source "security/safesetid/Kconfig"
 source "security/lockdown/Kconfig"
 source "security/landlock/Kconfig"
+source "security/samsung/defex_lsm/Kconfig"
 
 source "security/integrity/Kconfig"
+source "security/samsung/dsms/Kconfig"
+source "security/samsung/five/Kconfig"
+source "security/samsung/kumiho/Kconfig"
+source "security/samsung/proca/Kconfig"
+source "security/samsung/proca/gaf/Kconfig"
+source "security/samsung/mz/Kconfig"
 
 choice
 	prompt "First legacy 'major LSM' to be initialized"
@@ -281,6 +288,26 @@ config LSM
 	  controlled at boot with the "lsm=" parameter.
 
 	  If unsure, leave this as the default.
+
+config DDAR
+	bool "Enables dual encryption"
+	default n
+	help
+	Knox Dual-DAR (Data-At-Rest) protection
+
+config SDP_KEY_DUMP
+	bool "SDP KEY DUMP"
+	default n
+	help
+	For dumping sensitive keying material for CC Certification test.
+	Enabled only for eng and userdebug builds.
+
+config KZT
+	bool "Enable Knox Zero Trust"
+	default n
+	help
+	  Enable this option to enable the Knox Zero Trust feature in the kernel.
+	  This feature requires some kernel support to function properly.
 
 source "security/Kconfig.hardening"
 

@@ -37,6 +37,10 @@
 #include <asm/barrier.h>
 #include <asm/unaligned.h>
 
+#ifdef CONFIG_RKP
+#include <linux/rkp.h>
+#endif
+
 /* Registers */
 #define BPF_R0	regs[BPF_REG_0]
 #define BPF_R1	regs[BPF_REG_1]
@@ -887,7 +891,11 @@ bpf_jit_binary_alloc(unsigned int proglen, u8 **image_ptr,
 
 	if (bpf_jit_charge_modmem(pages))
 		return NULL;
+#ifdef CONFIG_RKP
+	hdr = (struct bpf_binary_header *)module_alloc_by_rkp(size, size);
+#else
 	hdr = bpf_jit_alloc_exec(size);
+#endif
 	if (!hdr) {
 		bpf_jit_uncharge_modmem(pages);
 		return NULL;
@@ -910,6 +918,10 @@ bpf_jit_binary_alloc(unsigned int proglen, u8 **image_ptr,
 void bpf_jit_binary_free(struct bpf_binary_header *hdr)
 {
 	u32 pages = hdr->pages;
+
+#ifdef CONFIG_RKP
+	uh_call(UH_APP_RKP, RKP_BPF_LOAD, (u64)hdr, (u64)(hdr->pages * PAGE_SIZE), 1, 0);
+#endif
 
 	bpf_jit_free_exec(hdr);
 	bpf_jit_uncharge_modmem(pages);

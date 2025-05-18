@@ -76,6 +76,32 @@ void __init fdt_reserved_mem_save_node(unsigned long node, const char *uname,
 	return;
 }
 
+#ifdef CONFIG_RBIN
+static phys_addr_t __init get_expand_size(unsigned long node)
+{
+	int len;
+	const __be32 *prop;
+	phys_addr_t size;
+
+	prop = of_get_flat_dt_prop(node, "expand_size", &len);
+	if (!prop)
+		return 0;
+
+	if (len != dt_root_size_cells * sizeof(__be32)) {
+		pr_err("invalid expand_size property in 'rbin' node.\n");
+		return 0;
+	}
+	size = dt_mem_next_cell(dt_root_size_cells, &prop);
+
+	return size;
+}
+static bool __init under_8GB_device(void)
+{
+	phys_addr_t threshold_size = 8UL << 30;
+	return memblock_phys_mem_size() <= threshold_size;
+}
+#endif
+
 /*
  * __reserved_mem_alloc_size() - allocate reserved memory described by
  *	'size', 'alignment'  and 'alloc-ranges' properties.
@@ -100,6 +126,15 @@ static int __init __reserved_mem_alloc_size(unsigned long node,
 		return -EINVAL;
 	}
 	size = dt_mem_next_cell(dt_root_size_cells, &prop);
+
+#ifdef CONFIG_RBIN
+	if (!strncmp(uname, "rbin", 4) && !under_8GB_device()) {
+		phys_addr_t size_temp = get_expand_size(node);
+
+		if (size_temp > 0)
+			size = size_temp;
+	}
+#endif
 
 	prop = of_get_flat_dt_prop(node, "alignment", &len);
 	if (prop) {
@@ -265,9 +300,10 @@ void __init fdt_init_reserved_mem(void)
 		int len;
 		const __be32 *prop;
 		int err = 0;
-		bool nomap;
+		bool nomap, nomemsize;
 
 		nomap = of_get_flat_dt_prop(node, "no-map", NULL) != NULL;
+		nomemsize = of_get_flat_dt_prop(node, "no-memsize", NULL) != NULL;
 		prop = of_get_flat_dt_prop(node, "phandle", &len);
 		if (!prop)
 			prop = of_get_flat_dt_prop(node, "linux,phandle", &len);
@@ -291,11 +327,23 @@ void __init fdt_init_reserved_mem(void)
 				bool reusable =
 					(of_get_flat_dt_prop(node, "reusable", NULL)) != NULL;
 
+#ifdef CONFIG_RBIN
+				if (!strcmp(rmem->name, "rbin")) {
+					rbin_total = rmem->size >> PAGE_SHIFT;
+					reusable = true;
+				}
+#endif
+
 				pr_info("%pa..%pa (%lu KiB) %s %s %s\n",
 					&rmem->base, &end, (unsigned long)(rmem->size / SZ_1K),
 					nomap ? "nomap" : "map",
 					reusable ? "reusable" : "non-reusable",
 					rmem->name ? rmem->name : "unknown");
+
+				if (!nomemsize)
+					memblock_memsize_record(rmem->name,
+							rmem->base, rmem->size,
+							nomap, reusable);
 			}
 		}
 	}

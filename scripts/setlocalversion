@@ -114,6 +114,12 @@ scm_version()
 			printf '%s' -dirty
 		fi
 	fi
+	
+	# Samsung does not use git, hg and svn.
+	# Forcely use android_release and kmi_generation
+	if [ -n "$android_release" ] && [ -n "$kmi_generation" ]; then
+		printf '%s' "-$android_release-$kmi_generation"
+	fi
 }
 
 collect_files()
@@ -177,5 +183,18 @@ fi
 if test -n "${BUILD_NUMBER}"; then
 	res="$res-ab${BUILD_NUMBER}"
 fi
+
+sec_scm_version()
+{
+	# Forcely use android_release and kmi_generation.
+	# And SEC build provide 'LOCALVERSION' to propagate extra version info.
+	if [ -n "${android_release}" ] && [ -n "${kmi_generation}" ]; then
+		printf '%s' "-${android_release}-${kmi_generation}${CONFIG_LOCALVERSION}${LOCALVERSION}-ab${BUILD_NUMBER}"
+	else
+		echo -n "$res"
+	fi
+}
+
+res=$(sec_scm_version)
 
 echo "$res"

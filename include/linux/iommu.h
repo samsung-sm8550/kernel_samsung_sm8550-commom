@@ -657,9 +657,19 @@ const struct iommu_ops *iommu_ops_from_fwnode(struct fwnode_handle *fwnode);
 
 static inline struct iommu_fwspec *dev_iommu_fwspec_get(struct device *dev)
 {
-	if (dev->iommu)
-		return dev->iommu->fwspec;
-	else
+	struct dev_iommu *iommu;
+
+	smp_wmb();
+	iommu = READ_ONCE(dev->iommu);
+
+	if (iommu) {
+		struct iommu_fwspec *fwspec;
+		
+		smp_wmb();
+		fwspec = READ_ONCE(iommu->fwspec);
+
+		return virt_addr_valid(fwspec) ? fwspec : NULL;
+	} else
 		return NULL;
 }
 
