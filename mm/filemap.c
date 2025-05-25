@@ -2648,8 +2648,9 @@ ssize_t filemap_read(struct kiocb *iocb, struct iov_iter *iter,
 	if (unlikely(!iov_iter_count(iter)))
 		return 0;
 
-	iov_iter_truncate(iter, inode->i_sb->s_maxbytes);
+	iov_iter_truncate(iter, inode->i_sb->s_maxbytes - iocb->ki_pos);
 	pagevec_init(&pvec);
+	trace_android_vh_filemap_read(filp, iocb->ki_pos, iov_iter_count(iter));
 
 #ifdef CONFIG_PAGE_BOOST_RECORDING
 	index = *ppos >> PAGE_SHIFT;
@@ -2855,7 +2856,7 @@ static inline loff_t page_seek_hole_data(struct xa_state *xas,
 	do {
 		if (ops->is_partially_uptodate(page, offset, bsz) == seek_data)
 			break;
-		start = (start + bsz) & ~(bsz - 1);
+		start = (start + bsz) & ~((u64)bsz - 1);
 		offset += bsz;
 	} while (offset < thp_size(page));
 unlock:
@@ -3448,11 +3449,13 @@ vm_fault_t filemap_map_pages(struct vm_fault *vmf,
 #ifdef CONFIG_PAGE_BOOST_RECORDING
 	pgoff_t head_pgoff = 0;
 #endif
+	pgoff_t first_pgoff = 0;
 
 	/* filemap_map_pages() is called within an rcu read lock already. */
 	head = first_map_page(mapping, &xas, end_pgoff);
 	if (!head)
 		return ret;
+	first_pgoff = xas.xa_index;
 
 #ifdef CONFIG_PAGE_BOOST_RECORDING
 	head_pgoff = xas.xa_index;
@@ -3507,6 +3510,7 @@ unlock:
 	if (ret == VM_FAULT_NOPAGE)
 		record_io_info(file, head_pgoff, last_pgoff - head_pgoff + 1);
 #endif
+	trace_android_vh_filemap_map_pages(file, first_pgoff, last_pgoff, ret);
 	return ret;
 }
 EXPORT_SYMBOL(filemap_map_pages);

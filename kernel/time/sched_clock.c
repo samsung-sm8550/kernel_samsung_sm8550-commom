@@ -77,7 +77,7 @@ notrace struct clock_read_data *sched_clock_read_begin(unsigned int *seq)
 
 notrace int sched_clock_read_retry(unsigned int seq)
 {
-	return read_seqcount_latch_retry(&cd.seq, seq);
+	return raw_read_seqcount_latch_retry(&cd.seq, seq);
 }
 
 /* FIXME: This can make a cache contension problem.
