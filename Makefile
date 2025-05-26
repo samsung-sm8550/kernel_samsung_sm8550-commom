@@ -545,6 +545,14 @@ KBUILD_CFLAGS   := -Wall -Wundef -Werror=strict-prototypes -Wno-trigraphs \
 		   -Werror=implicit-function-declaration -Werror=implicit-int \
 		   -Werror=return-type -Wno-format-security \
 		   -std=gnu89
+ifdef CONFIG_CC_IS_CLANG
+KBUILD_CFLAGS += -mcpu=cortex-a715+crypto+fp16+dotprod
+KBUILD_CFLAGS += -mtune=cortex-x3
+KBUILD_CFLAGS += -march=armv9-a
+KBUILD_CFLAGS += -mlittle-endian
+KBUILD_CFLAGS += -mbranch-protection=standard
+KBUILD_CFLAGS += -fstrict-aliasing -fno-omit-frame-pointer -fno-strict-overflow
+endif
 KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
