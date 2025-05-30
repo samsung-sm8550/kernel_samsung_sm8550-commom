@@ -550,8 +550,7 @@ KBUILD_CFLAGS += -mcpu=cortex-a715+crypto+fp16+dotprod
 KBUILD_CFLAGS += -mtune=cortex-x3
 KBUILD_CFLAGS += -march=armv9-a
 KBUILD_CFLAGS += -mlittle-endian
-KBUILD_CFLAGS += -mbranch-protection=standard
-KBUILD_CFLAGS += -fstrict-aliasing -fno-omit-frame-pointer -fno-strict-overflow
+KBUILD_CFLAGS += -fstrict-aliasing
 endif
 KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_AFLAGS_KERNEL :=
