@@ -1,0 +1,59 @@
+name: Build
+permissions:
+  contents: write
+on:
+  workflow_dispatch:
+  push:
+
+jobs: 
+  build_kernel:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: false
+      - name: Create Swap File
+        run: |
+          # Create a 12GB swap file
+          sudo fallocate -l 12G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          # Verify the memory increase
+          echo "Memory status after swap:"
+          free -h
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Build Kernel
+        run: |
+          source ./build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          path: |
+            build/*
+          compression-level: 0
+          
+      - name: Publish
+        id: release
+        uses: softprops/action-gh-release@v2.4.2
+        with:
+          files: build/*
+          name: KERNEL_${{ github.run_number }}
+          tag_name: ${{ github.run_number }}
+          
+          body: |
+            **DMXQ-AOSP-KERNEL**:
+            **Brought to you by @FSaurenbach**
+            WILL ONLY WORK ON AOSP!!!! THIS IS NOT ONE UI COMPATIBLE!!!! I AM NOT RESPONSIBLE FOR YOUR DEVICE NOT BOOTING/ BEING BRICKED, ANYTHING ELSE!
+            
+            - **KernelSU-Next included [KernelSU Next apk](https://github.com/KernelSU-Next/KernelSU-Next/releases)**
+            - **Run Number:** ${{ github.run_number }}
