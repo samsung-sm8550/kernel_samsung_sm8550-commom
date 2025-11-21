@@ -51,9 +51,9 @@ jobs:
           tag_name: ${{ github.run_number }}
           
           body: |
-            **DMXQ-AOSP-KERNEL**:
-            **Brought to you by @FSaurenbach**
-            WILL ONLY WORK ON AOSP!!!! THIS IS NOT ONE UI COMPATIBLE!!!! I AM NOT RESPONSIBLE FOR YOUR DEVICE NOT BOOTING/ BEING BRICKED, ANYTHING ELSE!
+            **DMXQ-KERNELSU-KERNEL**:
+            **Thanks to @edgars-cirulis**
+            WILL ONLY WORK ON ONEUI!!!! THIS IS NOT AOSP COMPATIBLE!!!! I AM NOT RESPONSIBLE FOR YOUR DEVICE NOT BOOTING/ BEING BRICKED, ANYTHING ELSE!
             
             - **KernelSU-Next included [KernelSU Next apk](https://github.com/KernelSU-Next/KernelSU-Next/releases)**
             - **Run Number:** ${{ github.run_number }}

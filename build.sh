@@ -85,7 +85,7 @@ export BUILD_OPTIONS=(
 build_kernel(){
     curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
     # Make default configuration.
-    make "${BUILD_OPTIONS[@]}" dm1q_defconfig
+    make "${BUILD_OPTIONS[@]}" gki_defconfig
 
     # Build the kernel
     make "${BUILD_OPTIONS[@]}" Image || exit 1
@@ -98,7 +98,7 @@ build_kernel(){
     # Copy the built kernel to the AnyKernel3 directory
     mv "${KERNEL_ROOT}/out/arch/arm64/boot/Image" "${KERNEL_ROOT}/AnyKernel3"
     
-    (cd AnyKernel3/ && zip -r ../DMXQ-AOSP-KERNEL.ZIP ./*)
-    mv DMXQ-AOSP-KERNEL.ZIP build/
+    (cd AnyKernel3/ && zip -r ../DMXQ-KERNEL.ZIP ./*)
+    mv DMXQ-KERNEL.ZIP build/
 }
 build_kernel
