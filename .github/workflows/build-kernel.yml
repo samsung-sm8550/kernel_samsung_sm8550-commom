@@ -1,0 +1,183 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+
+      release_type:
+        description: "Release type"
+        required: true
+        default: "prerelease"
+        type: choice
+        options:
+          - release
+          - prerelease
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: write
+
+    steps:
+
+      - name: Checkout kernel
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+
+          sudo apt install -y \
+            git \
+            bc \
+            bison \
+            build-essential \
+            curl \
+            flex \
+            libssl-dev \
+            libelf-dev \
+            python3 \
+            rsync \
+            unzip \
+            zip \
+            cpio \
+            device-tree-compiler \
+            ccache
+
+      # Clone AnyKernel dynamically
+      - name: Clone AnyKernel4
+        run: |
+          git clone --depth=1 \
+            https://github.com/osm0sis/AnyKernel4.git
+
+      # Configure for dm1q
+      - name: Configure AnyKernel4
+        run: |
+
+          sed -i 's/device.name1=.*/device.name1=dm1q/' \
+            AnyKernel4/anykernel.sh
+
+          sed -i 's/device.name2=.*/device.name2=dm1q/' \
+            AnyKernel4/anykernel.sh
+
+      # Make script executable
+      - name: Make build script executable
+        run: chmod +x scripts/build.sh
+
+      # Build kernel
+      - name: Build kernel
+        run: |
+          scripts/build.sh
+
+      # Copy outputs into AnyKernel
+      - name: Copy kernel files
+        run: |
+
+          IMAGE="out/arch/arm64/boot/Image"
+          DTBO="out/arch/arm64/boot/dtbo.img"
+
+          if [ ! -f "$IMAGE" ]; then
+            echo "Kernel Image missing!"
+            exit 1
+          fi
+
+          cp "$IMAGE" AnyKernel4/
+
+          if [ -f "$DTBO" ]; then
+            cp "$DTBO" AnyKernel4/
+          fi
+
+      # Detect kernel version
+      - name: Detect Kernel Version
+        id: kernelver
+        run: |
+
+          VERSION=$(strings out/arch/arm64/boot/Image \
+            | grep "Linux version" \
+            | head -n1 \
+            | awk '{print $3}')
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # Detect KernelSU version
+      - name: Detect KernelSU Version
+        id: ksuversion
+        run: |
+
+          if [ -d KernelSU-Next ]; then
+            cd KernelSU-Next
+            KSU_VER=$(git rev-parse --short HEAD)
+            cd ..
+          else
+            KSU_VER="not detected"
+          fi
+
+          echo "version=$KSU_VER" >> $GITHUB_OUTPUT
+
+      # Build flashable ZIP
+      - name: Create AnyKernel ZIP
+        run: |
+
+          cd AnyKernel4
+
+          ZIP_NAME="Kernel-dm1q-$(date +'%Y%m%d-%H%M').zip"
+
+          zip -r "../$ZIP_NAME" * \
+            -x "*.git*" \
+            -x "*README*"
+
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      # Generate tag
+      - name: Generate tag
+        id: tag
+        run: |
+
+          TAG="dm1q-$(date +'%Y%m%d-%H%M')"
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      # Create release notes
+      - name: Generate release notes
+        run: |
+
+          BUILD_DATE=$(date +"%Y-%m-%d %H:%M UTC")
+
+          cat <<EOF > release_notes.txt
+
+          Samsung Galaxy S23 (dm1q) Kernel Build
+          
+          Kernel Version:
+          ${{ steps.kernelver.outputs.version }}
+          
+          KernelSU Next Version:
+          ${{ steps.ksuversion.outputs.version }}
+          
+          Build Date:
+          $BUILD_DATE
+          
+          Credits:
+          Kernel source forked from edgars-cirulis
+          
+          EOF
+
+      # Create release
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+
+        with:
+
+          tag_name: ${{ steps.tag.outputs.tag }}
+
+          name: dm1q Kernel Build
+
+          prerelease: ${{ github.event.inputs.release_type == 'prerelease' }}
+
+          body_path: release_notes.txt
+
+          files: |
+            ${{ env.ZIP_NAME }}
