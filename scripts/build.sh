@@ -7,19 +7,31 @@ CLANG_VERSION=${CLANG_VERSION:-clang-r584948}
 OUT_DIR=${OUT_DIR:-out}
 CLANG_DIR=${CLANG_DIR:-"$HOME/tools/google-clang"}
 CLANG_BINARY="$CLANG_DIR/bin/clang"
+
+# KernelSU Next
+KSU_DIR=${KSU_DIR:-KernelSU-Next}
+KSU_REPO=${KSU_REPO:-https://github.com/KernelSU-Next/KernelSU-Next.git}
+KSU_BRANCH=${KSU_BRANCH:-main}
+
 START_TIME=$(date +%s)
 
 # --- pretty logs ---
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
 info(){ echo -e "${GREEN}[INFO]${NC} $*"; }
 warn(){ echo -e "${YELLOW}[WARN]${NC} $*"; }
 err(){  echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 
 setup_clang() {
   info "Checking for Clang ($CLANG_VERSION)..."
+
   if [ ! -x "$CLANG_BINARY" ]; then
     warn "Clang not found. Fetching..."
     mkdir -p "$CLANG_DIR"
+
     TARBALL="$(mktemp)"
 
     URL_BASE="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive"
@@ -47,23 +59,63 @@ setup_clang() {
   fi
 
   export PATH="$CLANG_DIR/bin:$PATH"
+
   ver="$("$CLANG_BINARY" --version | head -n1)"
   ver="$(echo "$ver" | sed -E 's/\(http[^)]*\)//g; s/[[:space:]]+/ /g; s/[[:space:]]+$//')"
+
   export KBUILD_COMPILER_STRING="$ver"
+}
+
+setup_kernelsu() {
+  info "Setting up KernelSU Next..."
+
+  if [ ! -d "$KSU_DIR" ]; then
+    info "Cloning KernelSU Next..."
+    git clone --depth=1 \
+      -b "$KSU_BRANCH" \
+      "$KSU_REPO" \
+      "$KSU_DIR"
+  else
+    info "Updating KernelSU Next..."
+    git -C "$KSU_DIR" fetch origin "$KSU_BRANCH"
+    git -C "$KSU_DIR" reset --hard "origin/$KSU_BRANCH"
+  fi
+
+  info "Applying KernelSU Next patches..."
+  bash "$KSU_DIR/kernel/setup.sh"
 }
 
 build_kernel() {
   info "Starting kernel build..."
+
   setup_clang
+  setup_kernelsu
+
   mkdir -p "$OUT_DIR"
 
-  make -j"$(nproc --all)" O="$OUT_DIR" ARCH=arm64 CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 \
-       "$KERNEL_DEFCONFIG" || err "defconfig failed"
+  info "Running defconfig..."
+  make -j"$(nproc --all)" \
+       O="$OUT_DIR" \
+       ARCH=arm64 \
+       CC=clang \
+       LD=ld.lld \
+       LLVM=1 \
+       LLVM_IAS=1 \
+       "$KERNEL_DEFCONFIG" \
+       || err "defconfig failed"
 
-  make -j"$(nproc --all)" O="$OUT_DIR" ARCH=arm64 CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 \
+  info "Building kernel..."
+  make -j"$(nproc --all)" \
+       O="$OUT_DIR" \
+       ARCH=arm64 \
+       CC=clang \
+       LD=ld.lld \
+       LLVM=1 \
+       LLVM_IAS=1 \
        || err "build failed"
 
   total=$(( $(date +%s) - START_TIME ))
+
   info "Build finished in $((total/60))m $((total%60))s."
 }
 
