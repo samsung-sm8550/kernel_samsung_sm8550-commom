@@ -69,21 +69,11 @@ setup_clang() {
 setup_kernelsu() {
   info "Setting up KernelSU Next..."
 
-  if [ ! -d "$KSU_DIR" ]; then
-    info "Cloning KernelSU Next..."
-    git clone --depth=1 \
-      -b "$KSU_BRANCH" \
-      "$KSU_REPO" \
-      "$KSU_DIR"
-  else
-    info "Updating KernelSU Next..."
-    git -C "$KSU_DIR" fetch origin "$KSU_BRANCH"
-    git -C "$KSU_DIR" reset --hard "origin/$KSU_BRANCH"
-  fi
-
-  info "Applying KernelSU Next patches..."
-  bash "$KSU_DIR/kernel/setup.sh"
+  curl -LSs \
+    "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" \
+    | bash -
 }
+
 
 build_kernel() {
   info "Starting kernel build..."
